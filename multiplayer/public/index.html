@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       old.replaceWith(s);
       if (p) await p;
     }
-    // Babel standalone auto-transforms type=text/babel on DOMContentLoadeds,
+    // Babel standalone auto-transforms type=text/babel on DOMContentLoaded,
     // which fired before we swapped the document. Trigger manually if present.
     if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
       window.Babel.transformScriptTags();
