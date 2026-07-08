@@ -1,0 +1,342 @@
+/*
+ * server.js — authoritative Taroky game server (Node + ws).
+ *
+ *   npm install
+ *   npm start                       # listens on ws://localhost:8080
+ *
+ * Design:
+ *  - The server holds the ONE true game state (via taroky-engine).
+ *  - Clients never send state; they send ACTIONS. The server validates every
+ *    action against the engine and rejects anything illegal or out of turn.
+ *  - After each state change the server pushes each client a REDACTED view
+ *    (viewFor) so a player only ever sees their own hand.
+ *  - Empty seats are filled with bots; the server drives bot moves on a timer.
+ *
+ * This is a reference implementation: single process, in-memory rooms, no auth,
+ * no persistence. For production add: auth/identity, reconnect tokens, a DB or
+ * Redis for room state, rate limiting, and horizontal scaling (sticky rooms).
+ */
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const { WebSocketServer } = require('ws');
+
+// The bundled web client (single self-contained HTML). Served at the root so
+// players just visit the server URL in a browser — no file to download.
+let CLIENT_HTML = '';
+try { CLIENT_HTML = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8'); } catch (e) { /* no client bundled; API-only */ }
+const T = require('./taroky-engine');
+
+// ---------- Elo ratings (persisted to disk) ----------
+// Set RATINGS_FILE to a path on a mounted volume so ratings survive redeploys.
+const RATINGS_FILE = process.env.RATINGS_FILE || path.join(__dirname, 'ratings.json');
+let ratings = {};                 // name -> { elo, deals }
+try { ratings = JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf8')); } catch (e) { /* first run */ }
+let ratingsSaveT = null;
+function saveRatings() {
+  clearTimeout(ratingsSaveT);
+  ratingsSaveT = setTimeout(() => { try { fs.writeFileSync(RATINGS_FILE, JSON.stringify(ratings)); } catch (e) { console.error('ratings save failed', e.message); } }, 300);
+}
+function eloOf(name) { return ratings[name] ? ratings[name].elo : 1200; }
+function leaderboard() {
+  return Object.keys(ratings)
+    .map((name) => ({ name, elo: Math.round(ratings[name].elo), deals: ratings[name].deals }))
+    .sort((a, b) => b.elo - a.elo)
+    .slice(0, 10);
+}
+// Rate one finished deal. Score by chip delta sign; a player's "opponents" are the
+// seats whose delta has the opposite sign (handles partnerships, solos, Žebrák).
+// Bots play at a fixed 1200 and are never stored. K=24.
+function rateDeal(room, g) {
+  const delta = g.result && g.result.delta;
+  if (!delta) return;
+  const seatInfo = [0, 1, 2, 3].map((s) => {
+    const human = !!(room.seats[s] || room.reserved[s]);
+    return { human, name: room.names[s], d: delta[s], elo: human ? eloOf(room.names[s]) : 1200 };
+  });
+  if (!seatInfo.some((x) => x.human)) return;
+  const changes = {};
+  for (const me of seatInfo) {
+    if (!me.human || me.d === 0) continue;
+    const opps = seatInfo.filter((x) => x.d * me.d < 0);
+    if (!opps.length) continue;
+    const oppAvg = opps.reduce((t, x) => t + x.elo, 0) / opps.length;
+    const expected = 1 / (1 + Math.pow(10, (oppAvg - me.elo) / 400));
+    const score = me.d > 0 ? 1 : 0;
+    changes[me.name] = (changes[me.name] || 0) + 24 * (score - expected);
+  }
+  let touched = false;
+  for (const name in changes) {
+    const r = ratings[name] || (ratings[name] = { elo: 1200, deals: 0 });
+    r.elo = Math.round((r.elo + changes[name]) * 10) / 10;
+    r.deals += 1;
+    touched = true;
+  }
+  if (touched) { saveRatings(); broadcastTables(); }
+}
+
+const PORT = process.env.PORT || 8080;
+const BOT_DELAY = 800;          // ms between bot moves (pacing)
+const TRICK_PAUSE = 1600;       // ms to hold a completed 4-card trick on the table
+const GRACE_MS = 120000;        // how long a disconnected player's seat is held for them
+const AWAY_MOVE_DELAY = 10000;  // bot waits this long before moving for a briefly-disconnected player
+const rooms = new Map();        // roomId -> Room
+
+function makeRoom(id, aiLevel) {
+  return {
+    id,
+    seats: [null, null, null, null], // ws or null (null => bot)
+    names: ['North', 'East', 'South', 'West'],
+    reserved: [null, null, null, null], // {token,name,timer} — seat held for a disconnected player
+    aiLevel: ['advanced', 'expert', 'insane'].includes(aiLevel) ? aiLevel : 'novice',
+    chat: [],                        // last 50 messages: {seat,name,text,ts}
+    game: null,
+    botTimer: null,
+  };
+}
+
+// Drop a room only when nobody is connected AND nobody is expected back.
+function cleanupRoom(room) {
+  const humans = room.seats.filter(Boolean).length;
+  const held = room.reserved.filter(Boolean).length;
+  if (humans === 0 && held === 0) {
+    clearTimeout(room.botTimer);
+    rooms.delete(room.id);
+  }
+}
+
+function broadcast(room) {
+  const g = room.game;
+  // rate each deal exactly once, the moment it reaches scoring
+  if (g && g.phase === 'scoring' && g._ratedDeal !== g.deal) { g._ratedDeal = g.deal; rateDeal(room, g); }
+  for (let seat = 0; seat < 4; seat++) {
+    const ws = room.seats[seat];
+    if (ws && ws.readyState === ws.OPEN) send(ws, { type: 'state', view: T.viewFor(g, seat) });
+  }
+}
+function send(ws, msg) { try { ws.send(JSON.stringify(msg)); } catch (e) {} }
+
+// Drive bots: whenever it's a bot seat's move, apply it after a short delay.
+function pumpBots(room) {
+  clearTimeout(room.botTimer);
+  const g = room.game;
+  if (!g || g.phase === 'scoring' || g.phase === 'idle') return;
+  // If a trick just completed, pause on it so players can see all four cards
+  // before the next lead sweeps it away.
+  let delay = BOT_DELAY;
+  if (g.lastTrick && room.heldSeq !== g.lastTrick.seq) { room.heldSeq = g.lastTrick.seq; delay = TRICK_PAUSE; }
+  for (let seat = 0; seat < 4; seat++) {
+    const isBot = !room.seats[seat];
+    if (!isBot) continue;
+    const action = T.aiAction(g, seat);
+    if (action) {
+      // If this seat belongs to a disconnected player, give them time to come
+      // back before the bot plays their move for them.
+      const d = room.reserved[seat] ? Math.max(delay, AWAY_MOVE_DELAY) : delay;
+      room.botTimer = setTimeout(() => {
+        if (room.seats[seat]) { pumpBots(room); return; }   // player came back — their move again
+        const res = T.applyAction(g, seat, action);
+        if (res.ok) { broadcast(room); pumpBots(room); }
+      }, d);
+      return; // one bot move at a time
+    }
+  }
+}
+
+function startHand(room) {
+  T.newDeal(room.game);
+  broadcast(room);
+  pumpBots(room);
+}
+
+const server = http.createServer((req, res) => {
+  // Serve the game client at the root (and /index.html). WebSocket upgrades are
+  // handled separately by the WebSocketServer attached below.
+  if (CLIENT_HTML && (req.url === '/' || req.url === '/index.html')) {
+    // no-cache: browsers must revalidate so redeploys reach players immediately
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache, must-revalidate' });
+    res.end(CLIENT_HTML);
+    return;
+  }
+  res.writeHead(CLIENT_HTML ? 404 : 200, { 'Content-Type': 'text/plain' });
+  res.end(CLIENT_HTML ? 'Not found' : 'Taroky server is up. Connect a client over WebSocket (wss://this-host).');
+});
+const wss = new WebSocketServer({ server });
+
+// --- lobby: track all connected sockets and broadcast the live table list ---
+const sockets = new Set();
+function tableList() {
+  const out = [];
+  for (const [id, room] of rooms) {
+    const humans = room.seats.filter(Boolean).length + room.reserved.filter(Boolean).length;
+    if (humans > 0) out.push({ id, humans, ai: room.aiLevel });
+  }
+  return out;
+}
+function broadcastTables() {
+  const tables = tableList();
+  for (const ws of sockets) {
+    if (ws.readyState === ws.OPEN && ws.meta && ws.meta.seat == null) send(ws, { type: 'tables', tables, leaderboard: leaderboard() });
+  }
+}
+
+// Heartbeat: ping every 25s so half-dead sockets are detected quickly AND the
+// hosting proxy (Railway et al.) never sees an idle connection to kill.
+setInterval(() => {
+  for (const ws of wss.clients) {
+    if (ws.isAlive === false) { try { ws.terminate(); } catch (e) {} continue; }
+    ws.isAlive = false;
+    try { ws.ping(); } catch (e) {}
+  }
+}, 25000);
+
+wss.on('connection', (ws) => {
+  ws.meta = { roomId: null, seat: null, token: null };
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
+  sockets.add(ws);
+  send(ws, { type: 'tables', tables: tableList(), leaderboard: leaderboard() });
+
+  ws.on('message', (buf) => {
+    let msg; try { msg = JSON.parse(buf); } catch (e) { return; }
+    handle(ws, msg);
+  });
+
+  ws.on('close', () => {
+    sockets.delete(ws);
+    const { roomId, seat, token } = ws.meta;
+    const room = rooms.get(roomId);
+    if (room && seat != null && room.seats[seat] === ws) {
+      room.seats[seat] = null;
+      // Hold the seat for GRACE_MS so a dropped connection can resume.
+      if (token) {
+        room.reserved[seat] = {
+          token,
+          name: room.names[seat],
+          timer: setTimeout(() => {
+            room.reserved[seat] = null;    // grace expired — seat becomes a normal bot
+            cleanupRoom(room);
+            broadcastTables();
+          }, GRACE_MS),
+        };
+      }
+      cleanupRoom(room);
+      if (rooms.has(roomId) && room.game) { broadcast(room); pumpBots(room); }
+    }
+    broadcastTables();
+  });
+});
+
+function handle(ws, msg) {
+  switch (msg.type) {
+    case 'join': {
+      // { type:'join', roomId, name, seat? }
+      const roomId = msg.roomId || 'lobby';
+      let room = rooms.get(roomId);
+      if (!room) { room = makeRoom(roomId, msg.ai); rooms.set(roomId, room); } // creator picks the AI level
+      let seat = -1;
+      // Resume: a reconnect token matching a held seat puts the player right back.
+      if (msg.token) {
+        for (let i = 0; i < 4; i++) {
+          const r = room.reserved[i];
+          if (r && r.token === msg.token && !room.seats[i]) {
+            seat = i; clearTimeout(r.timer); room.reserved[i] = null; break;
+          }
+        }
+      }
+      // Name fallback: if their name matches a seat not occupied by a human (a bot
+      // currently covering it), give them that seat back \u2014 covers expired tokens,
+      // cleared storage, or rejoining from a different device.
+      if (seat < 0 && msg.name) {
+        for (let i = 0; i < 4; i++) {
+          if (!room.seats[i] && room.names[i] === msg.name) {
+            seat = i;
+            if (room.reserved[i]) { clearTimeout(room.reserved[i].timer); room.reserved[i] = null; }
+            break;
+          }
+        }
+      }
+      // Fresh join: requested-if-free, else first seat that is neither taken nor held.
+      if (seat < 0) {
+        seat = (msg.seat != null && !room.seats[msg.seat] && !room.reserved[msg.seat]) ? msg.seat
+             : room.seats.findIndex((s, i) => !s && !room.reserved[i]);
+      }
+      if (seat < 0) { send(ws, { type: 'error', error: 'room full' }); return; }
+      room.seats[seat] = ws;
+      if (msg.name) room.names[seat] = msg.name;
+      const token = msg.token || (Math.random().toString(36).slice(2) + Date.now().toString(36));
+      ws.meta = { roomId, seat, token };
+      send(ws, { type: 'joined', roomId, seat, seats: room.names, token });
+      if (room.chat.length) send(ws, { type: 'chatHistory', messages: room.chat });
+      if (!room.game) { room.game = T.createGame({ seats: room.names, aiLevel: room.aiLevel }); }
+      // reflect any updated name
+      room.game.players[seat].name = room.names[seat];
+      // Auto-deal the first hand as soon as someone joins an idle room
+      // (empty seats play as bots). Clients may also send {type:'start'}.
+      if (room.game.phase === 'idle') { startHand(room); }
+      else { broadcast(room); pumpBots(room); }
+      broadcastTables();
+      break;
+    }
+    case 'chat': {
+      const { roomId, seat } = ws.meta;
+      const room = rooms.get(roomId);
+      if (!room || seat == null) return;
+      const text = ('' + (msg.text || '')).slice(0, 300).trim();
+      if (!text) return;
+      const entry = { seat, name: room.names[seat], text, ts: Date.now() };
+      room.chat.push(entry); if (room.chat.length > 50) room.chat.shift();
+      for (const c of room.seats) if (c && c.readyState === c.OPEN) send(c, { type: 'chat', message: entry });
+      break;
+    }
+    case 'leave': {
+      // Deliberate exit: vacate the seat (a bot covers it) but KEEP the player's
+      // name on it, so the name-fallback in 'join' returns them to this seat if
+      // they come back and it's still bot-covered. No reservation — others may take it.
+      const { roomId, seat } = ws.meta;
+      const room = rooms.get(roomId);
+      if (room && seat != null && room.seats[seat] === ws) {
+        room.seats[seat] = null;
+        if (room.reserved[seat]) { clearTimeout(room.reserved[seat].timer); room.reserved[seat] = null; }
+        cleanupRoom(room);
+        if (rooms.has(roomId) && room.game) { broadcast(room); pumpBots(room); }
+      }
+      ws.meta = { roomId: null, seat: null, token: null };
+      send(ws, { type: 'left' });
+      send(ws, { type: 'tables', tables: tableList(), leaderboard: leaderboard() });
+      broadcastTables();
+      break;
+    }
+    case 'list': {
+      send(ws, { type: 'tables', tables: tableList(), leaderboard: leaderboard() });
+      break;
+    }
+    case 'ping': {
+      // app-level keepalive from browsers (some proxies only count real data frames)
+      send(ws, { type: 'pong' });
+      break;
+    }
+    case 'start': {
+      // (re)deal a hand — any player in the room may start when idle/scoring
+      const room = rooms.get(ws.meta.roomId);
+      if (!room || !room.game) return;
+      if (room.game.phase === 'idle' || room.game.phase === 'scoring') startHand(room);
+      break;
+    }
+    case 'action': {
+      // { type:'action', action:{...} }  — applied as the sender's seat
+      const room = rooms.get(ws.meta.roomId);
+      if (!room || !room.game) return;
+      const seat = ws.meta.seat;
+      const res = T.applyAction(room.game, seat, msg.action);
+      if (!res.ok) { send(ws, { type: 'reject', error: res.error, action: msg.action }); return; }
+      broadcast(room);
+      pumpBots(room);
+      break;
+    }
+    default:
+      send(ws, { type: 'error', error: 'unknown message ' + msg.type });
+  }
+}
+
+server.listen(PORT, () => console.log('Taroky server on ws://localhost:' + PORT));

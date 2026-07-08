@@ -1,0 +1,14 @@
+{
+  "name": "taroky-multiplayer",
+  "version": "0.1.0",
+  "description": "Authoritative online-multiplayer server + rules engine for Czech Taroky",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "smoke": "node smoke-test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "license": "MIT"
+}

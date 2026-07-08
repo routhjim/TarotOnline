@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=EB+Garamond:wght@400;500;600&family=Pirata+One&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(circle at 50% 30%,#2f5e46,#1c3b2c 60%,#122718);min-height:100vh;font-family:'EB Garamond',serif;padding:34px 20px 60px}
+select{font-family:'EB Garamond',serif}
+</style>
+</helmet>
+<div style="max-width:1100px;margin:0 auto">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:26px">
+    <div>
+      <div style="font-family:'Pirata One',serif;font-size:40px;color:#d9bd7e;line-height:1">Card styles</div>
+      <div style="font-size:15px;color:rgba(236,223,189,.65);letter-spacing:1px">Preview &mdash; pick a style from the menu</div>
+    </div>
+    {{ styleMenu }}
+  </div>
+
+  <div style="margin-bottom:30px">
+    <div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(216,189,126,.7);margin-bottom:12px;border-bottom:1px solid rgba(216,189,126,.25);padding-bottom:6px">Trumps &amp; honours</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">{{ trumpRow }}</div>
+  </div>
+
+  <div style="margin-bottom:30px">
+    <div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(216,189,126,.7);margin-bottom:12px;border-bottom:1px solid rgba(216,189,126,.25);padding-bottom:6px">Court cards</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">{{ courtRow }}</div>
+  </div>
+
+  <div>
+    <div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(216,189,126,.7);margin-bottom:12px;border-bottom:1px solid rgba(216,189,126,.25);padding-bottom:6px">Pip cards</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">{{ pipRow }}</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  GOLD='#b8975a'; GOLDL='#d9bd7e'; INK='#2b2620'; SEPIA='#5f4a30'; SKIN='#ecd9b8';
+  SUIT={hearts:{g:'\u2665',c:'#a8362b'},diamonds:{g:'\u2666',c:'#a8362b'},spades:{g:'\u2660',c:'#26333c'},clubs:{g:'\u2663',c:'#26333c'}};
+  state={styleSel:'traditional'};
+
+  roman(n){const map=[[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];let r='',x=n;for(const[v,s]of map){while(x>=v){r+=s;x-=v;}}return r;}
+
+  // ================= STANDARD (current in-game style) =================
+  stdCard(card,w){const E=React.createElement;const GOLD=this.GOLD,INK=this.INK;const h=Math.round(w*1.5);
+    const isT=card.kind==='trump';const suit=isT?null:this.SUIT[card.suit];const main=isT?(card.honour?'#9a7b32':INK):suit.c;const frame=(isT||card.honour)?GOLD:'rgba(60,40,20,.25)';
+    const idx=rot=>E('div',{style:{position:'absolute',top:rot?'auto':w*0.06,bottom:rot?w*0.06:'auto',left:rot?'auto':w*0.09,right:rot?w*0.09:'auto',transform:rot?'rotate(180deg)':'none',display:'flex',flexDirection:'column',alignItems:'center',lineHeight:.92,color:main,fontFamily:"'Cormorant Garamond',serif"}},
+      E('div',{style:{fontSize:w*0.2,fontWeight:600}},card.label),E('div',{style:{fontSize:w*0.16}},isT?(card.honour?'\u2726':'\u2014'):suit.g));
+    let center;
+    if(isT){center=E('div',{style:{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:w*0.02}},
+      card.honour?E('div',{style:{color:GOLD,fontSize:w*0.18}},'\u2726'):null,
+      E('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontWeight:600,fontSize:w*(card.honour?0.44:0.54),color:card.honour?GOLD:INK}},card.label),
+      card.honour?E('div',{style:{fontFamily:"'EB Garamond',serif",fontSize:w*0.14,letterSpacing:1,textTransform:'uppercase',color:'#8a6f33'}},card.name):null);}
+    else if(card.court){const nm={K:'King',Q:'Queen',C:'Cavalier',J:'Jack'}[card.court];
+      center=E('div',{style:{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:w*0.03}},
+        E('div',{style:{fontSize:w*0.19,color:suit.c}},suit.g),
+        E('div',{style:{width:w*0.5,height:w*0.5,borderRadius:'50%',border:'1.5px solid '+GOLD,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontWeight:700,fontSize:w*0.42,color:suit.c,background:'radial-gradient(circle,#fbf4e2,#efe0c0)'}},card.court),
+        E('div',{style:{fontFamily:"'EB Garamond',serif",fontSize:w*0.12,letterSpacing:1,textTransform:'uppercase',color:'#8a6f33'}},nm));}
+    else{const n=card.pip;const g=[];for(let i=0;i<n;i++)g.push(E('div',{key:i,style:{fontSize:w*(n>4?0.2:0.26),color:suit.c,lineHeight:1}},suit.g));
+      center=E('div',{style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}},E('div',{style:{display:'flex',flexWrap:'wrap',gap:w*0.04,width:w*0.62,justifyContent:'center'}},g));}
+    return E('div',{style:{width:w,height:h,borderRadius:w*0.1,background:'linear-gradient(160deg,#f8f0dd,#ecdcbb)',border:'1px solid #c9b27d',boxShadow:'0 6px 13px rgba(0,0,0,.4)',position:'relative',overflow:'hidden',flex:'0 0 auto'}},
+      E('div',{style:{position:'absolute',inset:w*0.05,border:'1px solid '+frame,borderRadius:w*0.06,pointerEvents:'none'}}),idx(false),idx(true),center);}
+
+  // ================= TRADITIONAL (real Wuest Tarock scans, public domain) =================
+  // 19th-century Wuest Tarock deck, restored scans hosted on Wikimedia Commons.
+  wuestUrl(card){const B='cards/';
+    if(card.kind==='trump')return B+(card.strength===22?'Excuse':('Trump'+card.strength))+'.gif';
+    const r=card.court?({K:'King',Q:'Queen',C:'Knight',J:'Jack'}[card.court]):card.pip;
+    return B+r+card.suit+'.gif';}
+  svgEl(tag,props,...kids){return React.createElement(tag,props,...kids);}
+  hatch(y,h,key){const E=React.createElement;const lines=[];for(let i=0;i<h;i+=4)lines.push(E('line',{key:i,x1:8,y1:y+i,x2:92,y2:y+i,stroke:this.SEPIA,strokeWidth:.25,opacity:.35}));return E('g',{key:key},lines);}
+
+  scene(kind){const E=React.createElement;const S=this.SEPIA,G=this.GOLD;const P=(d,f,s,sw,k)=>E('path',{key:k,d:d,fill:f||'none',stroke:s||S,strokeWidth:sw||1.1,strokeLinecap:'round',strokeLinejoin:'round'});
+    const C=(cx,cy,r,f,s,k)=>E('circle',{key:k,cx:cx,cy:cy,r:r,fill:f||'none',stroke:s||S,strokeWidth:1});
+    const L=(x1,y1,x2,y2,k,sw)=>E('line',{key:k,x1:x1,y1:y1,x2:x2,y2:y2,stroke:S,strokeWidth:sw||1});
+    const hills=P('M4,62 Q28,50 52,60 T96,60 L96,76 L4,76 Z','#d8c9a3',S,.8,'hl');
+    switch(kind){
+      case 'village':return [hills,C(24,22,7,'#e7c565',G,'sun'),L(24,11,24,7,'r1'),L(35,22,39,22,'r2'),L(13,22,9,22,'r3'),L(32,14,35,11,'r4'),L(16,14,13,11,'r5'),
+        P('M56,58 L56,44 L70,44 L70,58 Z','#efe3c8',S,1,'house'),P('M53,44 L63,35 L73,44 Z','#b98a4e',S,1,'roof'),P('M60,58 L60,50 L64,50 L64,58','none',S,.9,'door'),
+        L(84,58,84,42,'tr',1.4),C(84,37,6.5,'#9aa86b',S,'fol')];
+      case 'moon':return [P('M4,64 Q30,54 55,62 T96,61 L96,76 L4,76 Z','#c9bd9c',S,.8,'mh'),
+        P('M62,16 A11,11 0 1,0 72,32 A9,9 0 1,1 62,16 Z','#e7c565',G,1,'moon'),
+        P('M24,18 l1.6,3.4 3.6,.5 -2.6,2.6 .6,3.6 -3.2,-1.7 -3.2,1.7 .6,-3.6 -2.6,-2.6 3.6,-.5 Z','#e7c565','none',0,'st1'),
+        C(40,34,1.1,'#e7c565','none','st2'),C(16,38,1.1,'#e7c565','none','st3'),
+        P('M30,62 L30,52 L36,52 L36,62','#efe3c8',S,.9,'twr'),P('M27,52 L33,46 L39,52 Z','#8d7a55',S,.9,'twt')];
+      case 'lutenist':return [hills,C(50,20,7,this.SKIN,S,'hd'),P('M40,52 L44,28 Q50,24 56,28 L60,52 Z','#7d8fa6',S,1,'bd'),
+        E('ellipse',{key:'lu',cx:63,cy:40,rx:7.5,ry:5.5,transform:'rotate(-35 63 40)',fill:'#c9a05c',stroke:S,strokeWidth:1}),L(58,35,72,22,'nk',1.6),
+        L(44,34,58,42,'a1',1.3),L(56,34,66,30,'a2',1.3),P('M44,17 Q50,10 56,17 L54,13 L46,13 Z','#a8362b',S,.9,'cap')];
+      case 'harlequin':return [hills,C(50,22,7,this.SKIN,S,'hd'),
+        P('M42,17 L38,8 L46,13 L50,5 L54,13 L62,8 L58,17 Z','#a8362b',S,.9,'hat'),C(38,8,1.4,'#e7c565','none','b1'),C(50,5,1.4,'#e7c565','none','b2'),C(62,8,1.4,'#e7c565','none','b3'),
+        P('M40,54 L44,30 Q50,26 56,30 L60,54 Z','#efe3c8',S,1,'bd'),
+        P('M46,33 l4,4 4,-4 -4,-4 Z','#a8362b','none',0,'d1'),P('M42,42 l4,4 4,-4 -4,-4 Z','#26333c','none',0,'d2'),P('M50,42 l4,4 4,-4 -4,-4 Z','#a8362b','none',0,'d3'),
+        L(40,36,32,28,'a1',1.3),L(60,36,68,28,'a2',1.3),C(31,26,2,'#e7c565',S,'w1')];
+      case 'dance':return [hills,C(36,22,6,this.SKIN,S,'h1'),C(64,22,6,this.SKIN,S,'h2'),
+        P('M28,54 L32,30 Q36,27 40,30 L44,54 Z','#a8362b',S,1,'b1'),P('M56,54 L60,30 Q64,27 68,30 L72,54 Z','#5c7256',S,1,'b2'),
+        L(40,34,56,34,'hands',1.4),L(30,38,22,30,'a1',1.2),L(70,38,78,30,'a2',1.2)];
+      case 'boat':return [P('M4,66 Q20,62 36,66 T68,66 T96,66 L96,76 L4,76 Z','#b9c2b1',S,.8,'sea'),
+        P('M32,58 Q50,66 68,58 L63,50 L37,50 Z','#8a6a42',S,1,'hull'),L(50,50,50,24,'mast',1.4),
+        P('M50,24 L68,47 L50,47 Z','#efe3c8',S,1,'sail'),P('M50,28 L38,44 L50,44 Z','#e2d3ae',S,.9,'jib'),
+        P('M8,60 q4,-3 8,0 M22,63 q4,-3 8,0 M74,62 q4,-3 8,0','none',S,.9,'wv')];
+      default:return [hills,P('M44,60 L47,34 L53,34 L56,60 Z','#efe3c8',S,1,'twr'),
+        L(50,30,62,18,'bl1',1.4),L(50,30,38,18,'bl2',1.4),L(50,30,62,42,'bl3',1.4),L(50,30,38,42,'bl4',1.4),
+        P('M58,18 L66,22 L62,26 Z','#d8c9a3',S,.8,'p1'),P('M42,18 L34,22 L38,26 Z','#d8c9a3',S,.8,'p2'),C(50,30,2,'#8a6a42',S,'hub'),
+        C(20,20,6,'#e7c565',G,'sun2'),L(20,10,20,6,'sr1')];
+    }
+  }
+  trumpScene(card){if(card.strength===22)return 'harlequin';if(card.strength===21)return 'moon';if(card.strength===1)return 'lutenist';return ['village','dance','boat','mill','moon','village','dance','boat','mill','village','dance','boat','mill','village','dance','boat','mill','village','dance','boat'][(card.strength-2)%20];}
+
+  courtFigure(card){const E=React.createElement;const S=this.SEPIA;const suit=this.SUIT[card.suit];const cc=suit.c;
+    const P=(d,f,s,sw,k)=>E('path',{key:k,d:d,fill:f||'none',stroke:s||S,strokeWidth:sw||1.1,strokeLinecap:'round',strokeLinejoin:'round'});
+    const C=(cx,cy,r,f,s,k)=>E('circle',{key:k,cx:cx,cy:cy,r:r,fill:f||'none',stroke:s||S,strokeWidth:1});
+    const L=(x1,y1,x2,y2,k,sw)=>E('line',{key:k,x1:x1,y1:y1,x2:x2,y2:y2,stroke:S,strokeWidth:sw||1.2,strokeLinecap:'round'});
+    const kids=[P('M34,68 L40,42 Q50,36 60,42 L66,68 Z','#efe3c8',S,1.1,'robe'),
+      P('M40,46 Q50,41 60,46 L58,50 Q50,46 42,50 Z',cc,'none',0,'stole'),C(50,28,9,this.SKIN,S,'head'),
+      E('text',{key:'sg',x:20,y:52,fontSize:11,fill:cc,fontFamily:'serif'},suit.g)];
+    if(card.court==='K'){kids.push(P('M40,21 L42,11 L46,16 L50,8 L54,16 L58,11 L60,21 Z','#c9a05c',S,1,'crown'),
+      P('M43,34 Q50,42 57,34 L57,38 Q50,45 43,38 Z','#cbb490',S,.8,'beard'),L(66,44,74,22,'scep',1.5),C(74,19,2.8,'#c9a05c',S,'orb'));}
+    else if(card.court==='Q'){kids.push(P('M41,20 Q50,10 59,20','#c9a05c',S,1.4,'coronet'),C(44,15,1.4,'#e7c565',S,'p1'),C(50,12,1.4,'#e7c565',S,'p2'),C(56,15,1.4,'#e7c565',S,'p3'),
+      P('M41,22 Q38,32 42,40 M59,22 Q62,32 58,40','none',S,.9,'hair'),L(66,46,73,26,'stem',1.3),C(73,23,3,cc,S,'fl'),C(70,26,1.6,'#e7c565',S,'fl2'));}
+    else if(card.court==='C'){kids.push(P('M39,18 L61,18 L57,11 L43,11 Z','#26333c',S,1,'hat'),P('M57,12 Q64,6 68,10','none',S,1.2,'plume'),
+      L(64,46,78,26,'sword',1.6),L(69,37,75,41,'guard',1.4),
+      P('M26,56 q-7,-12 1,-18 q5,-4 9,2 l-3,4 q-4,-3 -5,2 q-1,6 3,9 Z','#b99c6b',S,1,'horse'),C(30,42,1,'#2b2620','none','eye'));}
+    else{kids.push(P('M40,16 L60,13 L59,19 L41,21 Z','#5c7256',S,1,'cap'),C(61,14,1.8,cc,S,'pom'),
+      L(66,50,76,20,'hal',1.5),P('M76,20 L82,24 L78,29 Z','#8d8d8d',S,1,'axe'));}
+    return kids;}
+
+  tradCard(card,w){const E=React.createElement;const h=Math.round(w*161/89);const S=this.SEPIA;
+    const isT=card.kind==='trump';const suit=isT?null:this.SUIT[card.suit];const main=isT?'#2b2620':suit.c;
+    const chip=E('div',{style:{position:'absolute',top:4,left:4,zIndex:2,display:'flex',flexDirection:'column',alignItems:'center',lineHeight:.95,padding:'3px 5px',borderRadius:6,background:'rgba(249,242,224,.88)',border:'1px solid rgba(95,74,48,.4)',color:main,fontFamily:"'Cormorant Garamond',serif"}},
+      E('div',{style:{fontSize:w*0.13,fontWeight:700}},card.label),
+      isT?null:E('div',{style:{fontSize:w*0.11}},suit.g));
+    return E('div',{style:{width:w,height:h,borderRadius:w*0.06,background:'#f4ecd8',border:'1px solid #8a7550',boxShadow:'0 6px 13px rgba(0,0,0,.4)',position:'relative',overflow:'hidden',flex:'0 0 auto'}},
+      E('img',{src:this.wuestUrl(card),draggable:false,style:{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'fill',imageRendering:'auto'}}),
+      chip);}
+
+  tradCardDrawn(card,w){const E=React.createElement;const h=Math.round(w*1.5);const S=this.SEPIA,GOLD=this.GOLD;
+    const isT=card.kind==='trump';const suit=isT?null:this.SUIT[card.suit];
+    let inner;
+    if(isT){
+      const band=(rot)=>E('g',{key:rot?'b2':'b1',transform:rot?'rotate(180 50 75)':undefined},
+        E('rect',{x:28,y:7,width:44,height:13,fill:'#f7efdc',stroke:S,strokeWidth:1,rx:2}),
+        E('text',{x:50,y:17,textAnchor:'middle',fontSize:10,fontWeight:700,fill:'#2b2620',fontFamily:'Georgia,serif'},card.label));
+      inner=E('svg',{viewBox:'0 0 100 150',style:{position:'absolute',inset:0,width:'100%',height:'100%'}},
+        this.hatch(26,98,'hx'),
+        E('g',{key:'sc',transform:'translate(0,30) scale(1,0.52)'},this.scene(this.trumpScene(card))),
+        E('g',{key:'sc2',transform:'rotate(180 50 75) translate(0,30) scale(1,0.52)',opacity:.98},this.scene(this.trumpScene(card))),
+        E('line',{x1:8,y1:75,x2:92,y2:75,stroke:S,strokeWidth:.8}),
+        band(false),band(true),
+        card.honour?E('g',{key:'plq'},
+          E('rect',{x:30,y:70.5,width:40,height:9,fill:'#f7efdc',stroke:S,strokeWidth:.8,rx:2}),
+          E('text',{x:50,y:77,textAnchor:'middle',fontSize:5.6,letterSpacing:2,fill:'#7a5f36',fontFamily:'Georgia,serif'},(card.name||'').toUpperCase())):null);
+    }else if(card.court){
+      inner=E('svg',{viewBox:'0 0 100 150',style:{position:'absolute',inset:0,width:'100%',height:'100%'}},
+        this.hatch(10,130,'hx'),
+        E('g',{key:'f1'},this.courtFigure(card)),
+        E('g',{key:'f2',transform:'rotate(180 50 75)'},this.courtFigure(card)),
+        E('line',{x1:6,y1:75,x2:94,y2:75,stroke:S,strokeWidth:.8}),
+        E('path',{d:'M47,75 l3,-3 3,3 -3,3 Z',fill:GOLD,stroke:S,strokeWidth:.6}));
+    }else{
+      const n=card.pip;const pips=[];const rows=Math.ceil(n/2);
+      for(let i=0;i<n;i++){const col=i%2,row=Math.floor(i/2);const x=n===1?50:(col===0?36:64);const y=28+(rows===1?47:row*(94/(rows-1||1)));
+        pips.push(E('text',{key:i,x:x,y:y,textAnchor:'middle',fontSize:15,fill:suit.c,fontFamily:'serif',transform:y>75?('rotate(180 '+x+' '+(y-5)+')'):undefined},suit.g));}
+      inner=E('svg',{viewBox:'0 0 100 150',style:{position:'absolute',inset:0,width:'100%',height:'100%'}},
+        E('path',{d:'M50,10 C60,22 78,20 82,32 C86,44 70,48 70,60',stroke:'rgba(95,74,48,.25)',strokeWidth:1,fill:'none'}),
+        E('path',{d:'M50,140 C40,128 22,130 18,118 C14,106 30,102 30,90',stroke:'rgba(95,74,48,.25)',strokeWidth:1,fill:'none'}),
+        pips);
+    }
+    const main=isT?'#2b2620':suit.c;
+    const idx=rot=>E('div',{key:rot?'i2':'i1',style:{position:'absolute',top:rot?'auto':w*0.045,bottom:rot?w*0.045:'auto',left:rot?'auto':w*0.06,right:rot?w*0.06:'auto',transform:rot?'rotate(180deg)':'none',display:'flex',flexDirection:'column',alignItems:'center',lineHeight:.9,color:main,fontFamily:"'Cormorant Garamond',serif",zIndex:2}},
+      E('div',{style:{fontSize:w*0.15,fontWeight:700}},card.label),
+      isT?null:E('div',{style:{fontSize:w*0.13}},suit.g));
+    return E('div',{style:{width:w,height:h,borderRadius:w*0.07,background:'linear-gradient(160deg,#f9f2e0,#eee0be)',border:'1px solid #b7a074',boxShadow:'0 6px 13px rgba(0,0,0,.4)',position:'relative',overflow:'hidden',flex:'0 0 auto'}},
+      E('div',{style:{position:'absolute',inset:w*0.03,border:'1.6px solid '+this.SEPIA,borderRadius:w*0.045,pointerEvents:'none',zIndex:2}}),
+      E('div',{style:{position:'absolute',inset:w*0.055,border:'1px solid rgba(184,151,90,.75)',borderRadius:w*0.035,pointerEvents:'none',zIndex:2}}),
+      inner,isT?null:idx(false),isT?null:idx(true));}
+
+  card(c,w){return this.state.styleSel==='traditional'?this.tradCard(c,w):this.stdCard(c,w);}
+
+  renderVals(){const E=React.createElement;const w=150;
+    const t=(v,label,name,honour)=>({kind:'trump',strength:v,label:label,name:name,honour:!!honour});
+    const cc=(suit,court)=>({kind:'suit',suit:suit,court:court,label:court});
+    const pp=(suit,pip)=>({kind:'suit',suit:suit,pip:pip,label:''+pip});
+    const trumps=[t(22,'Sk','Sk\u00fdz',true),t(21,'XXI','Mond',true),t(19,'XIX'),t(10,'X'),t(5,'V'),t(1,'I','Pag\u00e1t',true)];
+    const courts=[cc('hearts','K'),cc('hearts','Q'),cc('spades','C'),cc('spades','J'),cc('diamonds','K'),cc('clubs','Q')];
+    const pips=[pp('spades',10),pp('hearts',4),pp('clubs',7),pp('diamonds',1)];
+    const styleMenu=E('label',{style:{display:'flex',alignItems:'center',gap:10}},
+      E('span',{style:{fontSize:13,letterSpacing:1.5,textTransform:'uppercase',color:'rgba(216,189,126,.75)'}},'Card style'),
+      E('select',{value:this.state.styleSel,onChange:(e)=>this.setState({styleSel:e.target.value}),style:{padding:'10px 36px 10px 14px',fontSize:16,color:'#f1e6c9',background:'rgba(8,16,12,.7)',border:'1px solid rgba(216,189,126,.5)',borderRadius:10,outline:'none',cursor:'pointer'}},
+        E('option',{value:'standard'},'Standard'),E('option',{value:'traditional'},'Traditional')));
+    return{styleMenu:styleMenu,
+      trumpRow:trumps.map((c,i)=>E('div',{key:i},this.card(c,w))),
+      courtRow:courts.map((c,i)=>E('div',{key:i},this.card(c,w))),
+      pipRow:pips.map((c,i)=>E('div',{key:i},this.card(c,w)))};}
+}
+</script>
+</body>
+</html>

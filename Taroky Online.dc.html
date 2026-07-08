@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=EB+Garamond:wght@400;500;600&family=Pirata+One&display=swap" rel="stylesheet">
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+<rect width="400" height="400" fill="#1c3b2c"/>
+<rect x="118" y="120" width="96" height="150" rx="12" fill="#f4ead6" stroke="#b8975a" stroke-width="3" transform="rotate(-8 166 195)"/>
+<rect x="186" y="120" width="96" height="150" rx="12" fill="#f8f0dd" stroke="#b8975a" stroke-width="3" transform="rotate(8 234 195)"/>
+<text x="234" y="212" font-family="Georgia,serif" font-size="52" fill="#a8362b" text-anchor="middle">&#9829;</text>
+<circle cx="200" cy="300" r="8" fill="#7fd39b"/>
+<text x="200" y="352" font-family="Georgia,serif" font-size="30" fill="#d9bd7e" text-anchor="middle" letter-spacing="2">Online</text>
+</svg>
+</template>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#0a0b0e;overflow:hidden;font-family:'EB Garamond',serif}
+@keyframes playin{from{opacity:0;transform:translateY(12px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+input{font-family:'EB Garamond',serif}
+button:active{transform:translateY(1px)}
+</style>
+<script src="cards-data.js"></script>
+<meta name="ext-resource-dependency" content="cards/Trump1.gif"><meta name="ext-resource-dependency" content="cards/Trump2.gif"><meta name="ext-resource-dependency" content="cards/Trump3.gif"><meta name="ext-resource-dependency" content="cards/Trump4.gif"><meta name="ext-resource-dependency" content="cards/Trump5.gif"><meta name="ext-resource-dependency" content="cards/Trump6.gif"><meta name="ext-resource-dependency" content="cards/Trump7.gif"><meta name="ext-resource-dependency" content="cards/Trump8.gif"><meta name="ext-resource-dependency" content="cards/Trump9.gif"><meta name="ext-resource-dependency" content="cards/Trump10.gif"><meta name="ext-resource-dependency" content="cards/Trump11.gif"><meta name="ext-resource-dependency" content="cards/Trump12.gif"><meta name="ext-resource-dependency" content="cards/Trump13.gif"><meta name="ext-resource-dependency" content="cards/Trump14.gif"><meta name="ext-resource-dependency" content="cards/Trump15.gif"><meta name="ext-resource-dependency" content="cards/Trump16.gif"><meta name="ext-resource-dependency" content="cards/Trump17.gif"><meta name="ext-resource-dependency" content="cards/Trump18.gif"><meta name="ext-resource-dependency" content="cards/Trump19.gif"><meta name="ext-resource-dependency" content="cards/Trump20.gif"><meta name="ext-resource-dependency" content="cards/Trump21.gif"><meta name="ext-resource-dependency" content="cards/Excuse.gif"><meta name="ext-resource-dependency" content="cards/Kinghearts.gif"><meta name="ext-resource-dependency" content="cards/Queenhearts.gif"><meta name="ext-resource-dependency" content="cards/Knighthearts.gif"><meta name="ext-resource-dependency" content="cards/Jackhearts.gif"><meta name="ext-resource-dependency" content="cards/Kingdiamonds.gif"><meta name="ext-resource-dependency" content="cards/Queendiamonds.gif"><meta name="ext-resource-dependency" content="cards/Knightdiamonds.gif"><meta name="ext-resource-dependency" content="cards/Jackdiamonds.gif"><meta name="ext-resource-dependency" content="cards/Kingspades.gif"><meta name="ext-resource-dependency" content="cards/Queenspades.gif"><meta name="ext-resource-dependency" content="cards/Knightspades.gif"><meta name="ext-resource-dependency" content="cards/Jackspades.gif"><meta name="ext-resource-dependency" content="cards/Kingclubs.gif"><meta name="ext-resource-dependency" content="cards/Queenclubs.gif"><meta name="ext-resource-dependency" content="cards/Knightclubs.gif"><meta name="ext-resource-dependency" content="cards/Jackclubs.gif"><meta name="ext-resource-dependency" content="cards/1hearts.gif"><meta name="ext-resource-dependency" content="cards/2hearts.gif"><meta name="ext-resource-dependency" content="cards/3hearts.gif"><meta name="ext-resource-dependency" content="cards/4hearts.gif"><meta name="ext-resource-dependency" content="cards/1diamonds.gif"><meta name="ext-resource-dependency" content="cards/2diamonds.gif"><meta name="ext-resource-dependency" content="cards/3diamonds.gif"><meta name="ext-resource-dependency" content="cards/4diamonds.gif"><meta name="ext-resource-dependency" content="cards/7spades.gif"><meta name="ext-resource-dependency" content="cards/8spades.gif"><meta name="ext-resource-dependency" content="cards/9spades.gif"><meta name="ext-resource-dependency" content="cards/10spades.gif"><meta name="ext-resource-dependency" content="cards/7clubs.gif"><meta name="ext-resource-dependency" content="cards/8clubs.gif"><meta name="ext-resource-dependency" content="cards/9clubs.gif"><meta name="ext-resource-dependency" content="cards/10clubs.gif">
+</helmet>
+<div style="position:fixed;inset:0;background:{{ outerBg }};display:flex;align-items:center;justify-content:center">
+  <div style="display:{{ deskDisplay }};transform:scale({{ scale }});transform-origin:center center;width:1340px;height:820px">
+    <div data-screen-label="Taroky table" style="position:relative;width:1340px;height:820px;border-radius:{{ tableRad }};overflow:hidden;background:radial-gradient(circle at 50% 42%,#2f5e46,#234b38 46%,#14301e);border:1px solid #6e5a2e;box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 0 140px rgba(0,0,0,.55)">
+      <div style="position:absolute;top:340px;left:670px;width:340px;height:340px;transform:translate(-50%,-50%);border:1px solid rgba(216,189,126,.14);border-radius:50%"></div>
+      <div style="position:absolute;top:340px;left:670px;width:230px;height:230px;transform:translate(-50%,-50%);border:1px solid rgba(216,189,126,.09);border-radius:50%"></div>
+      <div style="position:absolute;top:18px;left:28px;z-index:5">
+        <div style="font-family:'Pirata One',serif;font-size:36px;color:#d9bd7e;letter-spacing:1px;line-height:1">Taroky</div>
+        <div style="font-size:13px;color:rgba(216,189,126,.6);letter-spacing:3px;text-transform:uppercase">Online table</div>
+      </div>
+      {{ statusEl }}
+      {{ tableEl }}
+      {{ overlayEl }}
+      {{ toastEl }}
+    </div>
+    {{ helpEl }}
+  </div>
+  {{ mobileEl }}
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  GOLD='#b8975a'; GOLDL='#d9bd7e'; INK='#2b2620';
+  SUIT={hearts:{g:'\u2665',c:'#a8362b'},diamonds:{g:'\u2666',c:'#a8362b'},spades:{g:'\u2660',c:'#26333c'},clubs:{g:'\u2663',c:'#26333c'}};
+  bonusName={hrube:'Hrub\u00e1',tarocy:'Taroky',bite:'B\u00edda',uni:'Uni',pawnee:'P\u00e1n\u00ed',trul:'Trul',rosanna:'Rosanna'};
+  bonusVal={hrube:4,tarocy:2,bite:2,uni:4,pawnee:2,trul:2,rosanna:4};
+  state={scale:1,mobile:false,cardStyle:'standard',heldHidden:null,connected:false,connecting:false,view:null,seat:null,seats:null,toast:'',tables:[],newTable:'',
+    url:'wss://tarotonlinegame-production.up.railway.app',room:'',name:'Player',
+    aiChoice:'advanced',leaderboard:[],showTricks:false,chat:[],chatOpen:false,chatInput:'',chatUnread:0,sel:[],declSel:{bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false},hovered:null,lastPhase:null};
+
+  componentDidMount(){try{const cs=localStorage.getItem('taroky-cardstyle');if(cs==='traditional'||cs==='standard')this.setState({cardStyle:cs});}catch(e){}this.fit();this._onR=()=>this.fit();window.addEventListener('resize',this._onR);this.connect();this._lobbyPoll=setInterval(()=>{if(!this._dead&&this.ws&&this.ws.readyState===1&&!this.state.view)this.send({type:'list'});},3000);
+    // App-level keepalive: some proxies drop WebSockets that carry no data frames.
+    this._keepAlive=setInterval(()=>{if(!this._dead&&this.ws&&this.ws.readyState===1){this.send({type:'ping'});if(this.state.view)this._saveSession();}},25000);}
+  componentWillUnmount(){this._dead=true;clearInterval(this._lobbyPoll);clearInterval(this._keepAlive);clearTimeout(this._rt);window.removeEventListener('resize',this._onR);if(this.ws)try{this.ws.close();}catch(e){}}
+
+  // ---- session persistence (survives reloads and short disconnects) ----
+  _saveSession(){try{localStorage.setItem('taroky-session',JSON.stringify({room:this.state.room,token:this._token,name:this.state.name,ts:Date.now()}));}catch(e){}}
+  _loadSession(){try{const s=JSON.parse(localStorage.getItem('taroky-session')||'null');if(s&&s.room&&s.token&&(Date.now()-(s.ts||0))<150000)return s;}catch(e){}return null;}
+  _clearSession(){try{localStorage.removeItem('taroky-session');}catch(e){}this._token=null;}
+  fit(){const w=window.innerWidth,h=window.innerHeight;const s=Math.min(w/1340,h/820);this.setState({scale:s,mobile:w<820&&h>=w,winW:w,winH:h});}
+  toast(m){this.setState({toast:m});clearTimeout(this._tt);this._tt=setTimeout(()=>{if(!this._dead)this.setState({toast:''});},2600);}
+
+  // ---- networking (auto-connects to its own host; table lobby via 'tables') ----
+  connect(){if(this.ws)try{this.ws.close();}catch(e){}
+    let url=this.state.url;try{const p=location.protocol;if(p==='https:'||p==='http:')url=(p==='https:'?'wss':'ws')+'://'+location.host;}catch(e){}
+    let ws;try{ws=new WebSocket(url);}catch(e){this.toast('Cannot reach server');return;}
+    this.ws=ws;this.setState({connecting:true});
+    // A socket can wedge in CONNECTING (no onclose) on bad networks — time it out so the retry chain keeps moving.
+    clearTimeout(this._ct);this._ct=setTimeout(()=>{if(ws.readyState===0){try{ws.close();}catch(e){}if(ws.onclose)ws.onclose();}},6000);
+    ws.onopen=()=>{if(this._dead)return;clearTimeout(this._ct);this._retry=0;this.setState({connected:true,connecting:false});
+      // Resume our seat: same page-session first, then a recent saved session (reload / brief drop).
+      if(this.state.room&&this._token){this.send({type:'join',roomId:this.state.room,name:(this.state.name||'Player').trim(),token:this._token});}
+      else{const sess=this._loadSession();if(sess){this._token=sess.token;this.setState({room:sess.room,name:sess.name||this.state.name});this.send({type:'join',roomId:sess.room,name:sess.name||'Player',token:sess.token});}}};
+    ws.onclose=()=>{if(this._dead)return;
+      // Keep the table on screen and quietly retry \u2014 most drops are seconds long.
+      const n=(this._retry=(this._retry||0)+1);
+      if(n<=12){this.setState({connected:false,connecting:false});const wait=Math.min(8000,600*Math.pow(1.7,n-1));clearTimeout(this._rt);this._rt=setTimeout(()=>{if(!this._dead)this.connect();},wait);if(this.state.view&&n===1)this.toast('Connection lost \u2014 reconnecting\u2026');}
+      else{this.setState({connected:false,connecting:false,view:null});this.toast('Could not reconnect \u2014 back to the lobby.');}};
+    ws.onerror=()=>{if(this._dead)return;this.setState({connecting:false});};
+    ws.onmessage=(ev)=>{if(this._dead)return;let m;try{m=JSON.parse(ev.data);}catch(e){return;}
+      if(m.type==='tables')this.setState({tables:m.tables||[],leaderboard:m.leaderboard||this.state.leaderboard});
+      else if(m.type==='joined'){this._token=m.token||this._token;this.setState({seat:m.seat,seats:m.seats,room:m.roomId||this.state.room});this._saveSession();this.send({type:'start'});}
+      else if(m.type==='state')this.applyView(m.view);
+      else if(m.type==='pong'){}
+      else if(m.type==='chatHistory')this.setState({chat:(m.messages||[]).slice(-50)});
+      else if(m.type==='chat'){const chat=this.state.chat.concat([m.message]).slice(-100);const patch={chat:chat};if(!this.state.chatOpen&&m.message.seat!==this.state.seat)patch.chatUnread=this.state.chatUnread+1;this.setState(patch,()=>{const el=document.getElementById('chat-scroll');if(el)el.scrollTop=el.scrollHeight;});}
+      else if(m.type==='reject')this.toast(m.error||'Move rejected');
+      else if(m.type==='error'){if(/full/i.test(m.error||'')&&!this.state.view)this._clearSession();this.toast(m.error||'Error');}};}
+  joinTable(roomId){const id=(roomId||'').trim();if(!id){this.toast('Enter a table name');return;}this._retry=0;this._token=null;this.setState({room:id,chat:[],chatUnread:0});this.send({type:'join',roomId:id,name:(this.state.name||'Player').trim(),ai:this.state.aiChoice});}
+  applyView(view){const prev=this.state.lastPhase;const reset=(view.phase!==prev);const patch={view:view,seat:view.you,lastPhase:view.phase};
+    if(reset){patch.sel=[];patch.declSel={bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false};patch.showTricks=false;}
+    if(this.state.hovered&&!(view.hand||[]).some(c=>c.id===this.state.hovered))patch.hovered=null;
+    // A completed trick shows for ~1.6s then clears locally, even if the server
+    // is still waiting on the winner (a human) to lead the next card.
+    if(view.lastTrick&&view.lastTrick.seq!==this._schedSeq){this._schedSeq=view.lastTrick.seq;clearTimeout(this._heldTimer);const seq=view.lastTrick.seq;this._heldTimer=setTimeout(()=>{if(!this._dead)this.setState({heldHidden:seq});},1600);}
+    this.setState(patch);}
+  sendAction(a){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify({type:'action',action:a}));}
+  send(o){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(o));}
+
+  // ---- table geometry: rotate so my seat sits at the bottom ----
+  posOf(seat){const you=this.state.view.you;return ['S','E','N','W'][(seat-you+4)%4];}
+  seatAt(pos){const you=this.state.view.you;const off={S:0,E:1,N:2,W:3}[pos];return (you+off)%4;}
+
+  // ---- card renderer (shared visual language) ----
+  setCardStyle(v){this.setState({cardStyle:v});try{localStorage.setItem('taroky-cardstyle',v);}catch(e){}}
+  // Traditional style: restored scans of the 19th-century Wuest Tarock deck (public domain), stored locally in cards/
+  wuestUrl(card){const nm=card.kind==='trump'?(card.strength===22?'Excuse':('Trump'+card.strength)):((card.court?({K:'King',Q:'Queen',C:'Knight',J:'Jack'}[card.court]):card.pip)+card.suit);
+    const m=window.TAROKY_CARD_IMAGES;return (m&&m[nm])||('cards/'+nm+'.gif');}
+  tradCardEl(card,opt,w){const E=React.createElement;const th=Math.round(w*161/89);const isT=card.kind==='trump';const suit=isT?null:this.SUIT[card.suit];const main=isT?'#2b2620':suit.c;
+    return E('div',{key:opt.key,onClick:opt.onClick,onMouseEnter:opt.onMouseEnter,onMouseLeave:opt.onMouseLeave,title:opt.title||'',style:{width:w,height:th,borderRadius:w*0.06,background:'#f4ecd8',border:'1px solid #8a7550',boxShadow:opt.outline?'0 0 0 2px '+this.GOLDL+',0 8px 16px rgba(0,0,0,.4)':'0 6px 13px rgba(0,0,0,.4)',position:'relative',overflow:'hidden',flex:'0 0 auto',cursor:opt.onClick?'pointer':'default',opacity:opt.dim?0.5:1,userSelect:'none'}},
+      E('img',{src:this.wuestUrl(card),draggable:false,style:{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'}}),
+      E('div',{style:{position:'absolute',top:3,left:3,display:'flex',flexDirection:'column',alignItems:'center',lineHeight:.95,padding:'2px 4px',borderRadius:5,background:'rgba(249,242,224,.85)',border:'1px solid rgba(95,74,48,.4)',color:main,fontFamily:"'Cormorant Garamond',serif",pointerEvents:'none'}},
+        E('div',{style:{fontSize:Math.max(10,w*0.13),fontWeight:700}},card.label),
+        isT?null:E('div',{style:{fontSize:Math.max(9,w*0.11)}},suit.g)));}
+  cardEl(card,opt){opt=opt||{};const E=React.createElement;const GOLD=this.GOLD,GOLDL=this.GOLDL,INK=this.INK;const w=opt.w||92,h=Math.round((opt.w||92)*1.5),r=w*0.1;
+    if(!opt.faceUp){return E('div',{key:opt.key,style:{width:w,height:h,borderRadius:r,background:'#5c1c23',border:'1px solid '+GOLD,position:'relative',overflow:'hidden',boxShadow:'0 5px 12px rgba(0,0,0,.45)',flex:'0 0 auto'}},
+      E('div',{style:{position:'absolute',inset:0,backgroundImage:'repeating-linear-gradient(45deg,rgba(216,189,126,.16) 0 1px,transparent 1px 8px),repeating-linear-gradient(-45deg,rgba(216,189,126,.16) 0 1px,transparent 1px 8px)'}}),
+      E('div',{style:{position:'absolute',inset:w*0.07,border:'1px solid rgba(216,189,126,.5)',borderRadius:w*0.06}}),
+      E('div',{style:{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:w*0.32,height:w*0.32,borderRadius:'50%',border:'1px solid '+GOLDL,display:'flex',alignItems:'center',justifyContent:'center',color:GOLDL,fontFamily:"'Cormorant Garamond',serif",fontSize:w*0.24,background:'rgba(0,0,0,.18)'}},'\u2726'));}
+    if(this.state.cardStyle==='traditional')return this.tradCardEl(card,opt,w);
+    const isT=card.kind==='trump';const suit=isT?null:this.SUIT[card.suit];const main=isT?(card.honour?'#9a7b32':INK):suit.c;const frame=(isT||card.honour)?GOLD:'rgba(60,40,20,.25)';
+    const idx=rot=>E('div',{style:{position:'absolute',top:rot?'auto':w*0.06,bottom:rot?w*0.06:'auto',left:rot?'auto':w*0.09,right:rot?w*0.09:'auto',transform:rot?'rotate(180deg)':'none',display:'flex',flexDirection:'column',alignItems:'center',lineHeight:.92,color:main,fontFamily:"'Cormorant Garamond',serif"}},
+      E('div',{style:{fontSize:w*0.2,fontWeight:600}},card.label),E('div',{style:{fontSize:w*0.16}},isT?(card.honour?'\u2726':'\u2014'):suit.g));
+    let center;
+    if(isT){center=E('div',{style:{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:w*0.02}},
+      card.honour?E('div',{style:{color:GOLD,fontSize:w*0.18}},'\u2726'):null,
+      E('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontWeight:600,fontSize:w*(card.honour?0.44:0.54),color:card.honour?GOLD:INK,textShadow:card.honour?'0 0 14px rgba(184,151,90,.4)':'none'}},card.label));}
+    else if(card.court){const nm={K:'King',Q:'Queen',C:'Cavalier',J:'Jack'}[card.court];
+      center=E('div',{style:{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:w*0.03}},
+      E('div',{style:{fontSize:w*0.19,color:suit.c}},suit.g),
+      E('div',{style:{width:w*0.5,height:w*0.5,borderRadius:'50%',border:'1.5px solid '+GOLD,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontWeight:700,fontSize:w*0.42,color:suit.c,background:'radial-gradient(circle,#fbf4e2,#efe0c0)'}},card.court),
+      E('div',{style:{fontFamily:"'EB Garamond',serif",fontSize:w*0.12,letterSpacing:1,textTransform:'uppercase',color:'#8a6f33'}},nm));}
+    else{const n=card.pip;const g=[];for(let i=0;i<n;i++)g.push(E('div',{key:i,style:{fontSize:w*(n>4?0.2:0.26),color:suit.c,lineHeight:1}},suit.g));
+      center=E('div',{style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}},E('div',{style:{display:'flex',flexWrap:'wrap',gap:w*0.04,width:w*0.62,justifyContent:'center'}},g));}
+    return E('div',{key:opt.key,onClick:opt.onClick,onMouseEnter:opt.onMouseEnter,onMouseLeave:opt.onMouseLeave,title:opt.title||'',style:{width:w,height:h,borderRadius:r,background:'linear-gradient(160deg,#f8f0dd,#ecdcbb)',border:'1px solid #c9b27d',boxShadow:opt.outline?'0 0 0 2px '+GOLDL+',0 8px 16px rgba(0,0,0,.4)':'0 6px 13px rgba(0,0,0,.4)',position:'relative',overflow:'hidden',flex:'0 0 auto',cursor:opt.onClick?'pointer':'default',opacity:opt.dim?0.5:1,userSelect:'none'}},
+      E('div',{style:{position:'absolute',inset:w*0.05,border:'1px solid '+frame,borderRadius:w*0.06,pointerEvents:'none'}}),idx(false),idx(true),center);}
+
+  chip(title,desc,note,on,onClick,key){const E=React.createElement;return E('div',{key:key,onClick:onClick,style:{cursor:'pointer',padding:'9px 15px',borderRadius:11,border:'1px solid '+(on?this.GOLDL:'rgba(216,189,126,.28)'),background:on?'rgba(184,151,90,.2)':'rgba(8,16,12,.45)',color:'#ecdfbd',textAlign:'center',minWidth:120}},
+    E('div',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:19}},title),desc?E('div',{style:{fontSize:11,letterSpacing:.4,color:'rgba(216,189,126,.7)'}},desc):null,note?E('div',{style:{fontSize:11,color:on?this.GOLDL:'rgba(236,223,189,.42)',marginTop:2}},note):null);}
+  panelBox(title,sub,kids,extra){const E=React.createElement;return E('div',{style:Object.assign({position:'absolute',top:214,left:'50%',transform:'translateX(-50%)',zIndex:9,minWidth:440,maxWidth:680,padding:'22px 28px 22px',borderRadius:16,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.4)',boxShadow:'0 22px 54px rgba(0,0,0,.55)',textAlign:'center'},extra||{})},
+    E('div',{style:{fontFamily:"'Pirata One'",fontSize:25,color:'#d9bd7e'}},title),sub?E('div',{style:{fontSize:14,color:'rgba(236,223,189,.68)',marginTop:3}},sub):null,
+    E('div',{style:{display:'flex',gap:10,flexWrap:'wrap',justifyContent:'center',marginTop:16}},kids));}
+
+  // ---- nameplates & hands ----
+  nameplate(pos,seat){const E=React.createElement;const v=this.state.view;const p=v.players[seat];const active=v.turn===seat&&v.phase==='playing';const isDeclarer=v.mode&&seat===v.declarer;const isFore=v.phase==='bidding'&&seat===v.forehand;const isPartner=seat===v.partner;const isBidTurn=v.phase==='bidding'&&v.bidSeat===seat;const gold=active||isDeclarer||isFore||isPartner||isBidTurn;
+    let role='';if(isPartner)role='partner';else if(isDeclarer)role=(v.mode==='zebrak'?'\u017debr\u00e1k':v.mode==='pane'?'pan\u00e9':v.mode==='forthree'?'for three':'declarer');else if(isFore)role='forehand';
+    const coord={N:{top:120,left:670,transform:'translateX(-50%)'},S:{bottom:16,left:36},W:{top:386,left:18},E:{top:386,right:18}}[pos];
+    const kids=[E('div',{key:'n',style:{display:'flex',alignItems:'center',gap:6}},p.name+(seat===v.you?' (you)':''),E('span',{style:{fontFamily:"'Cormorant Garamond',serif",fontSize:16,color:'#d9bd7e'}},p.chips),(active||isBidTurn)?E('span',{style:{color:'#f6eccf'}},'\u25cf'):null)];
+    if(role)kids.push(E('div',{key:'r',style:{fontSize:11,letterSpacing:1.5,textTransform:'uppercase',color:'#d9bd7e',marginTop:1}},role));
+    return E('div',{key:'np'+pos,style:Object.assign({position:'absolute',padding:'5px 14px',borderRadius:14,background:'rgba(8,16,12,.66)',border:'1px solid '+(gold?this.GOLDL:'rgba(216,189,126,.25)'),color:(active||isBidTurn)?'#f6eccf':'rgba(236,223,189,.78)',fontSize:14,letterSpacing:.5,whiteSpace:'nowrap',boxShadow:(active||isBidTurn)?'0 0 16px 1px rgba(216,189,126,.5)':'none',zIndex:4,textAlign:pos==='E'?'right':'left'},coord)},kids);}
+
+  renderOpp(pos,seat){const E=React.createElement;const v=this.state.view;const n=v.players[seat].cards;const w=pos==='N'?56:52,h=Math.round(w*1.5);const mid=(n-1)/2;const els=[];
+    if(pos==='N'){const sp=Math.min(34,460/Math.max(n,1));for(let i=0;i<n;i++)els.push(E('div',{key:pos+'-'+i,style:{position:'absolute',left:670+(i-mid)*sp-w/2,top:14,transform:'rotate('+((i-mid)*1.1)+'deg)'}},this.cardEl(null,{faceUp:false,w:w,key:i})));}
+    else{const x=pos==='W'?34:1340-34-w;const sp=Math.min(28,440/Math.max(n,1));for(let i=0;i<n;i++)els.push(E('div',{key:pos+'-'+i,style:{position:'absolute',left:x,top:404+(i-mid)*sp-h/2}},this.cardEl(null,{faceUp:false,w:w,key:i})));}
+    els.push(this.nameplate(pos,seat));return els;}
+
+  renderMyHand(){const E=React.createElement;const s=this.state;const v=s.view;const cards=v.hand||[];const n=cards.length,w=92,h=138;const sp=Math.min(72,Math.min(940,n*64)/Math.max(n,1));const mid=(n-1)/2;
+    const legal=new Set(v.legal||[]);const isPlay=v.phase==='playing'&&v.turn===v.you;const isDiscard=v.phase==='discard'&&(v.discardWaiting||[]).includes(v.you);
+    const els=[];
+    for(let i=0;i<n;i++){const c=cards[i];const sel=s.sel.indexOf(c.id)>=0;const isL=legal.has(c.id);const hov=s.hovered===c.id;
+      const canClick=isDiscard||(isPlay&&isL);const dim=isPlay&&!isL;
+      const lift=(sel?34:0)+(hov&&canClick?26:0);const out=sel||(isPlay&&isL&&hov);
+      els.push(E('div',{key:c.id,style:{position:'absolute',left:670+(i-mid)*sp-w/2,top:648-lift,transform:'rotate('+((i-mid)*1.9)+'deg)',transformOrigin:'50% 130%',transition:'top .14s',zIndex:hov?60:10+i,pointerEvents:'auto'}},
+        this.cardEl(c,{faceUp:true,w:w,key:c.id,outline:out,dim:dim,title:'',
+          onClick:canClick?(()=>this.clickMyCard(c)):(()=>{if(isPlay)this.toast('You can\u2019t play that card now.');}),
+          onMouseEnter:canClick?(()=>this.setState({hovered:c.id})):null,onMouseLeave:canClick?(()=>this.setState({hovered:null})):null})));}
+    els.push(this.nameplate('S',v.you));return els;}
+  clickMyCard(c){const v=this.state.view;if(v.phase==='discard'){this.toggleSel(c);return;}if(v.phase==='playing'&&v.turn===v.you)this.sendAction({type:'play',cardId:c.id});}
+  toggleSel(c){const s=this.state;const v=s.view;const need=v.discardNeed||0;if(c.honour||c.court==='K'){this.toast('Kings and honours must stay.');return;}let sel=s.sel.slice();const i=sel.indexOf(c.id);if(i>=0)sel.splice(i,1);else{if(sel.length>=need){this.toast('Only '+need+' to lay aside.');return;}sel.push(c.id);}this.setState({sel:sel});}
+
+  renderTrick(){const E=React.createElement;const v=this.state.view;const coord={S:{x:670,y:474},N:{x:670,y:214},W:{x:486,y:344},E:{x:854,y:344}};const rot={S:0,N:2,W:-3,E:3};const w=88,h=132;const els=[];
+    const held=!(v.trick&&v.trick.length)&&v.lastTrick&&v.lastTrick.seq!==this.state.heldHidden;const trick=held?v.lastTrick.cards:(v.trick||[]);const winner=held?v.lastTrick.winner:null;
+    trick.forEach((p,i)=>{const pos=this.posOf(p.seat);const ps=coord[pos];const wg=held&&p.seat===winner;els.push(E('div',{key:p.seat,style:{position:'absolute',left:ps.x-w/2,top:ps.y-h/2,animation:'playin .25s ease-out',zIndex:wg?30:20+i,transform:'rotate('+rot[pos]+'deg)'+(wg?' scale(1.07)':''),transition:'transform .2s',filter:wg?'drop-shadow(0 0 11px rgba(216,189,126,.95))':'none'}},this.cardEl(p.card,{faceUp:true,w:w,key:p.seat})));});
+    return els;}
+
+  renderRevealed(){const E=React.createElement;const v=this.state.view;const rt=v.revealedTalon||[];if(!rt.length||v.phase==='scoring')return null;
+    return E('div',{key:'rev',style:{position:'absolute',bottom:74,left:30,zIndex:5}},E('div',{style:{fontSize:11,letterSpacing:2,textTransform:'uppercase',color:'rgba(216,189,126,.6)',marginBottom:5}},'Talon revealed'),E('div',{style:{display:'flex',gap:6}},rt.map(c=>this.cardEl(c,{faceUp:true,w:44,key:c.id}))));}
+
+  // Derives a clear turn/trick prompt from the view (server sends no message).
+  statusLine(v){if(!v||v.phase!=='playing')return null;const me=v.you;const held=(!(v.trick&&v.trick.length)&&v.lastTrick)?v.lastTrick.winner:null;
+    if(v.turn===me){if(!(v.trick&&v.trick.length)){if(held===me)return{text:'You won the trick \u2014 your lead',win:true};return{text:'Your lead',win:true};}return{text:'Your turn to play',win:false};}
+    if(held!=null)return{text:(v.players[held]?v.players[held].name:'')+' won the trick',win:false};
+    if(v.turn!=null&&v.players[v.turn])return{text:v.players[v.turn].name+' to play\u2026',win:false};
+    return null;}
+
+  // ---- table (everything positional) ----
+  renderTable(){const E=React.createElement;const v=this.state.view;if(!v)return E('div',{style:{display:'none'}});const kids=[];
+    ['E','N','W'].forEach(pos=>{kids.push(...this.renderOpp(pos,this.seatAt(pos)));});
+    kids.push(...this.renderMyHand());kids.push(...this.renderTrick());const rev=this.renderRevealed();if(rev)kids.push(rev);
+    const _st=this.statusLine(v);const _msg=_st?_st.text:v.message;const _win=_st&&_st.win;
+    if(_msg)kids.push(E('div',{key:'msg',style:{position:'absolute',top:152,left:'50%',transform:'translateX(-50%)',zIndex:6,padding:'8px 24px',borderRadius:20,background:_win?'rgba(184,151,90,.24)':'rgba(8,16,12,.66)',border:'1px solid '+(_win?this.GOLDL:'rgba(216,189,126,.3)'),color:_win?'#f8eecb':'#ecdfbd',fontSize:17,fontWeight:_win?600:400,boxShadow:_win?'0 0 18px rgba(216,189,126,.45)':'none',whiteSpace:'nowrap'}},_msg));
+    // contract strip
+    kids.push(E('div',{key:'contract',style:{position:'absolute',top:20,right:24,zIndex:5,minWidth:180,padding:'8px 13px',borderRadius:11,background:'rgba(8,16,12,.5)',border:'1px solid rgba(216,189,126,.4)'}},
+      E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)',letterSpacing:1,textTransform:'uppercase'}},'Deal '+v.deal+(v.aiLevel?' \u00b7 '+v.aiLevel+' AI':'')),
+      E('div',{style:{fontFamily:"'Cormorant Garamond'",fontSize:20,color:'#f1e6c9'}},this.contractText(v))));
+    const styleSel=E('div',{key:'stylesel',style:{position:'absolute',bottom:16,right:24,zIndex:6,display:'flex',gap:8}},this.chatBtn(false),this.leaveBtn(false),this.helpBtn(false),this.styleSelectEl(false));
+    const chatPanel=this.renderChat(false);if(chatPanel)kids.push(E('div',{key:'chatpanel'},chatPanel));
+    const reconn=(!this.state.connected&&this.state.view)?E('div',{key:'reconn',style:{position:'absolute',top:110,left:'50%',transform:'translateX(-50%)',zIndex:11,padding:'9px 26px',borderRadius:20,background:'rgba(90,30,26,.85)',border:'1px solid #d9a06a',color:'#f8e8cb',fontSize:16,letterSpacing:.5,boxShadow:'0 8px 24px rgba(0,0,0,.5)',whiteSpace:'nowrap'}},'Connection lost \u2014 reconnecting\u2026 your seat is held'):null;
+    return E('div',{style:{position:'absolute',inset:0}},[this.renderDeclList(),styleSel,reconn].concat(kids).filter(Boolean));}
+  declList(v){if(!v||(v.phase!=='playing'&&v.phase!=='scoring'))return [];const nm=(seat)=>v.players[seat]?v.players[seat].name:'';const out=[];
+    (v.bonuses||[]).forEach(b=>out.push(nm(b.seat)+' \u00b7 '+(this.bonusName[b.type]||b.type)));
+    if(v.contra!=null)out.push(nm(v.contra)+' \u00b7 Contra');
+    if(v.rey)out.push((v.reyBy!=null?nm(v.reyBy):'')+' \u00b7 Rey');
+    if(v.pagatUltimo!=null)out.push(nm(v.pagatUltimo)+' \u00b7 Pag\u00e1t ultimo'+(v.pagatContra?' (contra)':''));
+    return out;}
+  renderDeclList(){const E=React.createElement;const v=this.state.view;const lines=this.declList(v);if(!lines.length)return null;
+    return E('div',{key:'decllist',style:{position:'absolute',top:104,left:28,zIndex:5,maxWidth:230}},
+      E('div',{style:{fontSize:11,letterSpacing:2,textTransform:'uppercase',color:'rgba(216,189,126,.6)',marginBottom:5}},'Declarations'),
+      lines.map((l,i)=>E('div',{key:i,style:{fontSize:14,color:'#ecdfbd',padding:'1px 0'}},l)));}
+
+  contractText(v){if(v.phase==='bidding')return 'Bidding\u2026';if(v.phase==='scoring')return 'Hand over';if(!v.mode)return 'Dealing\u2026';const who=v.players[v.declarer]?v.players[v.declarer].name:'';const nm=(seat)=>v.players[seat]?v.players[seat].name:'';const m={draw4:'draws 4',zebrak:'\u017debr\u00e1k',pane:'Pan\u00e9 + XX',forthree:'For three'}[v.mode];let t=who+' \u00b7 '+m;if(v.calledLabel&&v.mode==='draw4')t+=', '+v.calledLabel;if(v.solo)t+=' \u00b7 solo';if(v.contra!=null)t+=' \u00b7 Contra ('+nm(v.contra)+')';if(v.rey)t+=' \u00b7 Rey'+(v.reyBy!=null?' ('+nm(v.reyBy)+')':'');return t;}
+
+  // ---- overlays (lobby + action panels + scoring) ----
+  renderOverlay(){const E=React.createElement;const s=this.state;if(!s.view)return this.renderLobby();const v=s.view;const me=v.you;
+    if(v.phase==='bidding'&&v.bidSeat===me)return this.renderBidPanel();
+    if(v.phase==='talonHand'&&v.declarer===me&&v.f3Showing)return this.renderTalonHand();
+    if(v.phase==='talonChoice'&&v.talonChoiceSeat===me)return this.panelBox('You drew the '+v.calledLabel+' from the talon','Your partner card is in your own hand.',[this.chip('Play alone','1 vs 3','',false,()=>this.sendAction({type:'talonChoice',choice:'solo'}),'solo'),this.chip('Throw in','pay 2 each','',false,()=>this.sendAction({type:'talonChoice',choice:'throwin'}),'throw')]);
+    if(v.phase==='discard'&&(v.discardWaiting||[]).includes(me))return this.renderDiscardBar();
+    if(v.phase==='declare'&&(v.declPending||[]).includes(me))return this.renderDeclare();
+    if(v.phase==='declare')return this.waitBox('Waiting for other players to declare\u2026');
+    if(v.phase==='scoring')return this.renderScoring();
+    return E('div',{style:{display:'none'}});}
+  waitBox(t){const E=React.createElement;return E('div',{style:{position:'absolute',top:220,left:'50%',transform:'translateX(-50%)',zIndex:9,padding:'14px 26px',borderRadius:14,background:'rgba(8,16,12,.7)',border:'1px solid rgba(216,189,126,.3)',color:'#ecdfbd',fontSize:16}},t);}
+
+  renderLobby(){const E=React.createElement;const s=this.state;
+    const inputStyle={width:'100%',padding:'10px 12px',borderRadius:9,border:'1px solid rgba(216,189,126,.35)',background:'rgba(8,16,12,.6)',color:'#f1e6c9',fontSize:15,outline:'none'};
+    const btn=(label,onClick,dis)=>E('button',{onClick:onClick,disabled:dis,style:{fontFamily:"'EB Garamond'",fontSize:15,letterSpacing:1,padding:'10px 20px',borderRadius:10,cursor:dis?'default':'pointer',color:'#1b130a',background:'linear-gradient(180deg,#e6cd8f,#c4a256)',border:'1px solid #7a6126',opacity:dis?0.5:1,flex:'0 0 auto'}},label);
+    const field=(label,key,ph)=>E('label',{style:{display:'block',textAlign:'left',marginBottom:14}},
+      E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:4}},label),
+      E('input',{value:s[key],placeholder:ph,onChange:e=>this.setState({[key]:e.target.value}),style:inputStyle}));
+    let body;
+    if(!s.connected){
+      body=E('div',{style:{textAlign:'center',color:'rgba(236,223,189,.72)',padding:'16px 0'}},s.connecting?'Connecting to the server\u2026':'Not connected.',
+        s.connecting?null:E('div',{style:{marginTop:14}},btn('Retry',()=>this.connect(),false)));
+    }else{
+      const rows=(s.tables||[]).map(t=>E('div',{key:t.id,style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px',borderRadius:10,background:'rgba(8,16,12,.5)',border:'1px solid rgba(216,189,126,.22)',marginBottom:8}},
+        E('div',{style:{textAlign:'left',minWidth:0}},
+          E('div',{style:{color:'#f1e6c9',fontSize:17,fontFamily:"'Cormorant Garamond'",whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},t.id),
+          E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)'}},t.humans+' / 4 players'+(t.humans>=4?' \u00b7 full':(t.humans===1?' \u00b7 3 bots':''))+(t.ai?' \u00b7 '+t.ai+' AI':''))),
+        btn(t.humans>=4?'Full':'Join',()=>this.joinTable(t.id),t.humans>=4)));
+      const list=rows.length?rows:[E('div',{key:'none',style:{color:'rgba(236,223,189,.5)',fontSize:14,textAlign:'center',padding:'14px 0'}},'No active tables yet \u2014 create one below.')];
+      body=E('div',{},
+        E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:8,textAlign:'left'}},'Active tables'),
+        E('div',{style:{maxHeight:230,overflowY:'auto',marginBottom:18}},list),
+        E('div',{style:{display:'flex',gap:8,alignItems:'flex-end'}},
+          E('label',{style:{flex:1,textAlign:'left'}},E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:4}},'New table'),
+            E('input',{value:s.newTable,placeholder:'table name',onChange:e=>this.setState({newTable:e.target.value}),onKeyDown:e=>{if(e.key==='Enter')this.joinTable(s.newTable);},style:inputStyle})),
+          btn('Create',()=>this.joinTable(s.newTable),false)),
+        E('div',{style:{display:'flex',gap:8,alignItems:'center',marginTop:10}},
+          E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)'}},'Bot skill'),
+          ['novice','advanced','expert','insane'].map(lv=>E('div',{key:lv,onClick:()=>this.setState({aiChoice:lv}),style:{cursor:'pointer',padding:'6px 12px',borderRadius:9,fontSize:13,letterSpacing:.5,border:'1px solid '+(s.aiChoice===lv?this.GOLDL:'rgba(216,189,126,.3)'),background:s.aiChoice===lv?'rgba(184,151,90,.22)':'rgba(8,16,12,.5)',color:s.aiChoice===lv?'#f1e6c9':'rgba(236,223,189,.65)'}},lv.charAt(0).toUpperCase()+lv.slice(1)))),
+        E('div',{style:{fontSize:11,color:'rgba(236,223,189,.45)',marginTop:5,textAlign:'left'}},
+          s.aiChoice==='novice'?'plays by simple instinct'
+          :s.aiChoice==='advanced'?'counts trumps, reads voids, feeds partners'
+          :s.aiChoice==='expert'?'simulates the hidden hands and solves each \u2014 strongest fair opponent'
+          :'sees every hand and plays perfectly \u2014 it cheats. You have been warned.'),
+        (s.leaderboard&&s.leaderboard.length)?E('div',{style:{marginTop:18,borderTop:'1px solid rgba(216,189,126,.2)',paddingTop:12}},
+          E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:8,textAlign:'left'}},'Leaderboard'),
+          E('div',{style:{maxHeight:170,overflowY:'auto'}},s.leaderboard.map((p,i)=>E('div',{key:p.name,style:{display:'flex',alignItems:'center',gap:8,padding:'4px 2px',borderBottom:i<s.leaderboard.length-1?'1px solid rgba(216,189,126,.08)':'none'}},
+            E('div',{style:{width:22,fontSize:12.5,color:i===0?'#e6cd8f':'rgba(216,189,126,.55)',fontWeight:i<3?700:400}},(i+1)+'.'),
+            E('div',{style:{flex:1,textAlign:'left',fontSize:14,color:p.name===(s.name||'').trim()?'#e6cd8f':'#ecdfbd',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},p.name),
+            E('div',{style:{fontSize:11.5,color:'rgba(236,223,189,.45)'}},p.deals+' deals'),
+            E('div',{style:{width:44,textAlign:'right',fontSize:14.5,color:'#d9bd7e',fontVariantNumeric:'tabular-nums'}},p.elo)))),
+          E('div',{style:{fontSize:10.5,color:'rgba(236,223,189,.35)',marginTop:6,textAlign:'left'}},'Elo per deal, under your table name \u2014 win chips to climb.')):null);
+    }
+    return E('div',{style:{position:'absolute',inset:0,zIndex:12,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,10,8,.55)',padding:16}},
+      E('div',{style:{width:'min(440px,94vw)',padding:'clamp(22px,5vw,32px) clamp(20px,5vw,34px)',borderRadius:18,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.45)',boxShadow:'0 30px 70px rgba(0,0,0,.6)'}},
+        E('div',{style:{fontFamily:"'Pirata One'",fontSize:30,color:'#d9bd7e',textAlign:'center',marginBottom:4}},'Taroky tables'),
+        E('div',{style:{fontSize:13,color:'rgba(236,223,189,.6)',textAlign:'center',marginBottom:20}},'Join a table or start your own. Empty seats are bots. ',E('span',{onClick:()=>this.setState({showHelp:true}),style:{color:'#d9bd7e',cursor:'pointer',textDecoration:'underline'}},'How to play')),
+        field('Your name','name','Player'),
+        body));}
+
+  renderBidPanel(){const v=this.state.view;const hand=v.hand||[];const fp=hand.filter(c=>c.points===5).length;const lvl=v.bid.level;const k=[];
+    k.push(this.chip('Pass',lvl>0?'let it stand':'draw 4','',false,()=>this.sendAction({type:'bid',level:0}),'pass'));
+    if(lvl<1)k.push(this.chip('\u017debr\u00e1k','take no tricks','\u00b116 each',false,()=>this.sendAction({type:'bid',level:1}),'z'));
+    if(fp>=4&&lvl<2)k.push(this.chip('Pan\u00e9 + XX','play with the 20','you hold P\u00e1n\u00ed',false,()=>this.sendAction({type:'bid',level:2}),'p'));
+    if(lvl<3)k.push(this.chip('For three','solo vs all 3','\u00d73 if you shop, lose',false,()=>this.sendAction({type:'bid',level:3}),'f'));
+    const cur=v.bid.level===0?(v.players[v.bid.seat].name+' draws 4'):(v.players[v.bid.seat].name+' \u00b7 '+(v.bid.level===1?'\u017debr\u00e1k':v.bid.level===2?'Pan\u00e9 + XX':'For three'));
+    return this.panelBox('Your bid','Standing: '+cur,k);}
+
+  renderTalonHand(){const E=React.createElement;const v=this.state.view;const showing=v.f3Showing||[];const first=v.f3Set?v.f3Set!=='B':(v.revealedTalon||[]).length===0;
+    const cardsRow=E('div',{style:{display:'flex',gap:12,justifyContent:'center',margin:'16px 0 8px'}},showing.map(c=>this.cardEl(c,{faceUp:true,w:78,key:c.id})));
+    let btns;if(first)btns=[this.chip('Keep these','1st hand','no penalty',false,()=>this.sendAction({type:'talonHand',choice:'keep1'}),'k1'),this.chip('Swap to next 3','see the other half','',false,()=>this.sendAction({type:'talonHand',choice:'swap'}),'sw')];
+    else btns=[this.chip('Keep these','2nd hand','\u00d72 if you lose',false,()=>this.sendAction({type:'talonHand',choice:'keep2'}),'k2'),this.chip('Back to first 3','3rd hand','\u00d73 if you lose',false,()=>this.sendAction({type:'talonHand',choice:'back'}),'k3')];
+    return E('div',{style:{position:'absolute',top:200,left:'50%',transform:'translateX(-50%)',zIndex:9,padding:'20px 28px',borderRadius:16,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.4)',boxShadow:'0 22px 54px rgba(0,0,0,.55)',textAlign:'center'}},
+      E('div',{style:{fontFamily:"'Pirata One'",fontSize:24,color:'#d9bd7e'}},'For three \u2014 take three'),cardsRow,E('div',{style:{display:'flex',gap:10,justifyContent:'center',marginTop:10}},btns));}
+
+  renderDiscardBar(){const E=React.createElement;const s=this.state;const v=s.view;const need=v.discardNeed||0;
+    return E('div',{style:{position:'absolute',bottom:24,right:28,zIndex:9,display:'flex',alignItems:'center',gap:16}},
+      E('div',{style:{color:'#ecdfbd',fontSize:16}},'Lay aside ',E('b',{style:{fontFamily:"'Cormorant Garamond'",fontSize:23,color:'#f1e6c9'}},s.sel.length),' / '+need),
+      E('button',{onClick:()=>{if(s.sel.length===need)this.sendAction({type:'discard',cardIds:s.sel});},style:{fontFamily:"'EB Garamond'",fontSize:16,letterSpacing:1,padding:'10px 24px',borderRadius:10,cursor:'pointer',color:'#1b130a',background:'linear-gradient(180deg,#e6cd8f,#c4a256)',border:'1px solid #7a6126'}},'Confirm'));}
+
+  // Stage-aware declaration model: 1 = collections & ultimo, 2 = contra/contra-pagát (informed), 3 = rey.
+  declModel(compact){const v=this.state.view;const d=this.state.declSel;const hand=v.hand||[];const E=React.createElement;const stage=v.declStage||1;
+    const notDecl=!(v.declarer===v.you||v.partner===v.you||(!!v.calledLabel&&hand.some(c=>c.kind==='trump'&&c.label===v.calledLabel)));
+    const items=[];let title='Declarations',sub='Call your bonuses \u2014 all optional.',btn='Confirm calls';
+    if(stage===1){
+      const tr=hand.filter(c=>c.kind==='trump').length;const fp=hand.filter(c=>c.points===5).length;const hasPagat=hand.some(c=>c.kind==='trump'&&c.strength===1);
+      const elig=[];if(tr>=10)elig.push('hrube');else if(tr>=8)elig.push('tarocy');else if(tr>=1&&tr<=2)elig.push('bite');else if(tr===0)elig.push('uni');if(hand.filter(c=>c.court==='K').length===4)elig.push('rosanna');else if(fp>=4)elig.push('pawnee');if(hand.some(c=>c.kind==='trump'&&c.strength===1)&&hand.some(c=>c.kind==='trump'&&c.strength===21)&&hand.some(c=>c.kind==='trump'&&c.strength===22))elig.push('trul');
+      elig.forEach(t=>{const on=d.bonuses.indexOf(t)>=0;items.push(this.chip(this.bonusName[t]+(compact?' +'+(3*this.bonusVal[t]):' \u00b7 +'+(3*this.bonusVal[t])),'',on?'\u2714':compact?'call':'tap to call',on,()=>this.toggleDecl('bonuses',t),t));});
+      if(hasPagat)items.push(this.chip('Pag\u00e1t ultimo',compact?'\u00b14':'win last trick w/ I',d.ultimo?'\u2714':compact?'':'tap to stake',d.ultimo,()=>this.toggleDecl('ultimo'),'ult'));
+    }else if(stage===2){
+      title='Contra?';sub='All calls are on the table \u2014 double if you dare.';btn='Continue';
+      if(notDecl&&v.contraBy==null)items.push(this.chip('Contra',compact?'\u00d72':'double the payout',d.contra?'\u2714':compact?'':'tap',d.contra,()=>this.toggleDecl('contra'),'con'));
+      if(v.pagatUltimo!=null&&v.pagatUltimo!==v.you)items.push(this.chip('Contra pag\u00e1t',compact?'\u00d72':'double their ultimo',d.pagatContra?'\u2714':compact?'':'tap',d.pagatContra,()=>this.toggleDecl('pagatContra'),'cp'));
+    }else{
+      title='Rey?';sub='They doubled you \u2014 answer \u00d74 or let it stand.';btn='Continue';
+      items.push(this.chip('Rey',compact?'\u00d74':'re-double \u00d74',d.rey?'\u2714':compact?'':'tap',d.rey,()=>this.toggleDecl('rey'),'rey'));
+    }
+    // in stages 2-3, recap what has been called
+    let recap=null;
+    if(stage>1){
+      const parts=(v.bonuses||[]).map(b=>v.players[b.seat].name+' \u00b7 '+this.bonusName[b.type]);
+      if(v.pagatUltimo!=null)parts.push(v.players[v.pagatUltimo].name+' \u00b7 Pag\u00e1t ultimo');
+      if(stage===3)parts.push(v.contraBy!=null?(v.players[v.contraBy].name+' \u00b7 Contra'):'Contra');
+      recap=E('div',{key:'recap',style:{fontSize:compact?12.5:13.5,color:'rgba(236,223,189,.75)',margin:compact?'2px 0 8px':'8px 0 2px',lineHeight:1.5}},parts.length?('Called: '+parts.join('  \u2022  ')):'Nothing was called.');
+    }
+    return {items,title,sub,btn,recap};}
+  renderDeclare(){const E=React.createElement;const m=this.declModel(false);
+    return E('div',{style:{position:'absolute',top:214,left:'50%',transform:'translateX(-50%)',zIndex:9,width:620,padding:'22px 26px',borderRadius:16,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.4)',boxShadow:'0 22px 54px rgba(0,0,0,.55)',textAlign:'center'}},
+      E('div',{style:{fontFamily:"'Pirata One'",fontSize:25,color:'#d9bd7e'}},m.title),
+      E('div',{style:{fontSize:14,color:'rgba(236,223,189,.68)',marginTop:2}},m.sub),
+      m.recap,
+      E('div',{style:{display:'flex',gap:10,flexWrap:'wrap',justifyContent:'center',margin:'16px 0 18px'}},m.items.length?m.items:[E('div',{key:'n',style:{fontSize:14,color:'rgba(236,223,189,.5)'}},'Nothing to declare.')]),
+      E('button',{onClick:()=>this.submitDeclare(),style:{fontFamily:"'EB Garamond'",fontSize:16,letterSpacing:1,padding:'11px 30px',borderRadius:11,cursor:'pointer',color:'#1b130a',background:'linear-gradient(180deg,#e6cd8f,#c4a256)',border:'1px solid #7a6126'}},m.btn));}
+  toggleDecl(key,val){const d=Object.assign({},this.state.declSel);if(key==='bonuses'){const a=d.bonuses.slice();const i=a.indexOf(val);if(i>=0)a.splice(i,1);else a.push(val);d.bonuses=a;}else d[key]=!d[key];this.setState({declSel:d});}
+  submitDeclare(){const d=this.state.declSel;this.sendAction({type:'declare',bonuses:d.bonuses,ultimo:d.ultimo,contra:d.contra,rey:d.rey,pagatContra:d.pagatContra});this.setState({declSel:{bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false}});}
+
+  // End-of-hand trick review: every trick, every card, and who took it.
+  miniCard(c,winner){const E=React.createElement;const tr=c.kind==='trump';const col=tr?'#8a5a28':(this.SUIT[c.suit]||{}).c||'#26333c';
+    return E('div',{style:{minWidth:34,padding:'3px 6px',borderRadius:6,textAlign:'center',fontSize:13,fontFamily:"'Cormorant Garamond'",fontWeight:600,color:col,background:winner?'#f6ecd2':'rgba(246,236,210,.82)',border:winner?'2px solid #b8975a':'1px solid rgba(184,151,90,.35)',boxShadow:winner?'0 0 8px rgba(216,189,126,.5)':'none'}},
+      tr?c.label:c.label+(this.SUIT[c.suit]||{}).g);}
+  renderTrickReview(compact){const E=React.createElement;const v=this.state.view;const hist=v.trickHistory||[];
+    const rows=hist.map((t,i)=>E('div',{key:i,style:{display:'flex',alignItems:'center',gap:8,padding:'5px 2px',borderBottom:i<hist.length-1?'1px solid rgba(216,189,126,.12)':'none'}},
+      E('div',{style:{width:22,fontSize:12,color:'rgba(216,189,126,.6)',fontVariantNumeric:'tabular-nums'}},(i+1)+'.'),
+      E('div',{style:{display:'flex',gap:5,flex:1}},t.cards.map((x,j)=>E('div',{key:j,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:1}},
+        this.miniCard(x.card,x.seat===t.winner),
+        E('div',{style:{fontSize:9.5,color:x.seat===t.winner?'#e6cd8f':'rgba(236,223,189,.5)'}},(v.players[x.seat].name||'').slice(0,6))))),
+      E('div',{style:{fontSize:12.5,color:'#d9bd7e',width:compact?60:90,textAlign:'right',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},v.players[t.winner].name)));
+    return E('div',{onClick:()=>this.setState({showTricks:false}),style:{position:'fixed',inset:0,zIndex:45,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,10,8,.72)',padding:12}},
+      E('div',{onClick:(e)=>e.stopPropagation(),style:{width:compact?'min(430px,96vw)':560,maxHeight:'88vh',display:'flex',flexDirection:'column',padding:compact?'18px 16px':'24px 28px',borderRadius:16,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.45)',boxShadow:'0 30px 70px rgba(0,0,0,.6)'}},
+        E('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}},
+          E('div',{style:{fontFamily:"'Pirata One'",fontSize:23,color:'#d9bd7e'}},'The tricks, one by one'),
+          E('button',{onClick:()=>this.setState({showTricks:false}),style:{fontSize:13,padding:'4px 12px',borderRadius:8,border:'1px solid rgba(216,189,126,.35)',background:'transparent',color:'#ecdfbd',cursor:'pointer'}},'Close')),
+        E('div',{style:{overflowY:'auto'}},rows.length?rows:E('div',{style:{fontSize:14,color:'rgba(236,223,189,.5)',padding:16,textAlign:'center'}},'No tricks were played this hand.'))));}
+  reviewBtn(){const E=React.createElement;const v=this.state.view;if(!(v.trickHistory||[]).length)return null;
+    return E('button',{onClick:()=>this.setState({showTricks:true}),style:{fontFamily:"'EB Garamond'",fontSize:15,letterSpacing:.5,padding:'10px 20px',borderRadius:11,cursor:'pointer',color:'#ecdfbd',background:'rgba(8,16,12,.6)',border:'1px solid rgba(216,189,126,.4)'}},'Review tricks');}
+  renderScoring(){const E=React.createElement;const v=this.state.view;const r=v.result||{lines:[],delta:[0,0,0,0]};const showPts=r.kind==='hand';
+    return E('div',{style:{position:'absolute',inset:0,zIndex:10,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,10,8,.6)'}},
+      E('div',{style:{width:600,padding:'30px 40px',borderRadius:18,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.45)',boxShadow:'0 30px 70px rgba(0,0,0,.6)',textAlign:'center'}},
+        E('div',{style:{fontFamily:"'Pirata One'",fontSize:28,color:'#d9bd7e',marginBottom:6}},r.winnerNames?(r.winnerNames+' win the deal'):(r.kind==='zebrak'?(v.players[v.declarer].name+(r.success?' win the \u017debr\u00e1k':' lose the \u017debr\u00e1k')):'Hand over')),
+        showPts?E('div',{style:{fontSize:13,color:'rgba(236,223,189,.62)',letterSpacing:1,textTransform:'uppercase',marginBottom:14}},'Declarers '+r.declPoints+' \u00b7 Defenders '+r.defPoints+' \u00b7 54 to take it'):null,
+        E('div',{style:{textAlign:'left',margin:'0 auto 16px',maxWidth:480,display:'flex',flexDirection:'column',gap:5}},(r.lines||[]).map((l,i)=>E('div',{key:i,style:{fontSize:14.5,color:'#ecdfbd',borderBottom:'1px solid rgba(216,189,126,.12)',paddingBottom:5}},l))),
+        E('div',{style:{display:'flex',justifyContent:'center',gap:20,marginBottom:22}},v.players.map((p,i)=>{const dl=(r.delta||[])[i]||0;return E('div',{key:i,style:{textAlign:'center'}},E('div',{style:{fontFamily:"'Cormorant Garamond'",fontSize:30,color:'#f1e6c9',lineHeight:1}},p.chips),E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)'}},p.name),E('div',{style:{fontSize:13,color:dl>0?'#9fd6a0':dl<0?'#e3a3a3':'rgba(236,223,189,.4)'}},(dl>0?'+':'')+dl));})),
+        E('div',{style:{display:'flex',gap:12,justifyContent:'center'}},
+          this.reviewBtn(),
+          E('button',{onClick:()=>this.sendAction({type:'nextDeal'}),style:{fontFamily:"'EB Garamond'",fontSize:17,letterSpacing:1,padding:'12px 32px',borderRadius:11,cursor:'pointer',color:'#1b130a',background:'linear-gradient(180deg,#e6cd8f,#c4a256)',border:'1px solid #7a6126'}},'Deal next hand'))),
+      this.state.showTricks?this.renderTrickReview(false):null);}
+
+  sendChat(){const t=(this.state.chatInput||'').trim();if(!t)return;this.send({type:'chat',text:t});this.setState({chatInput:''});}
+  toggleChat(){this.setState({chatOpen:!this.state.chatOpen,chatUnread:0},()=>{const el=document.getElementById('chat-scroll');if(el)el.scrollTop=el.scrollHeight;const inp=document.getElementById('chat-input');if(inp)inp.focus();});}
+  chatBtn(compact){const E=React.createElement;const n=this.state.chatUnread;return E('button',{onClick:()=>this.toggleChat(),title:'Table chat',style:{position:'relative',padding:compact?'3px 9px':'6px 12px',fontSize:compact?11:13,fontFamily:"'EB Garamond',serif",color:'#f1e6c9',background:this.state.chatOpen?'rgba(184,151,90,.25)':'rgba(8,16,12,.7)',border:'1px solid rgba(216,189,126,.4)',borderRadius:8,cursor:'pointer'}},'Chat',
+    n>0?E('span',{style:{position:'absolute',top:-7,right:-7,minWidth:17,height:17,borderRadius:9,background:'#a8362b',color:'#fff',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',border:'1px solid #d9a06a'}},n>9?'9+':n):null);}
+  renderChat(mobile){const E=React.createElement;const s=this.state;if(!s.chatOpen)return null;const me=s.seat;
+    const msgs=s.chat.map((m,i)=>E('div',{key:i,style:{marginBottom:5,textAlign:'left'}},
+      E('span',{style:{color:m.seat===me?'#d9bd7e':'#9fbfae',fontWeight:600,fontSize:12.5}},(m.name||'?')+': '),
+      E('span',{style:{color:'#ecdfbd',fontSize:13.5,overflowWrap:'anywhere'}},m.text)));
+    const box=E('div',{onClick:(e)=>e.stopPropagation(),style:mobile?{position:'fixed',left:8,right:8,bottom:176,height:'42vh',zIndex:30,display:'flex',flexDirection:'column',borderRadius:14,background:'radial-gradient(circle at 50% 0%,#23271e,#12140d)',border:'1px solid rgba(216,189,126,.45)',boxShadow:'0 18px 50px rgba(0,0,0,.55)'}:{position:'absolute',left:24,bottom:64,width:300,height:320,zIndex:12,display:'flex',flexDirection:'column',borderRadius:14,background:'radial-gradient(circle at 50% 0%,#23271e,#12140d)',border:'1px solid rgba(216,189,126,.45)',boxShadow:'0 18px 50px rgba(0,0,0,.55)'}},
+      E('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid rgba(216,189,126,.2)'}},
+        E('div',{style:{fontFamily:"'Pirata One'",fontSize:17,color:'#d9bd7e'}},'Table chat'),
+        E('button',{onClick:()=>this.toggleChat(),style:{fontSize:12,padding:'2px 10px',borderRadius:7,border:'1px solid rgba(216,189,126,.35)',background:'transparent',color:'#ecdfbd',cursor:'pointer'}},'\u2715')),
+      E('div',{id:'chat-scroll',style:{flex:'1 1 auto',overflowY:'auto',padding:'8px 12px'}},msgs.length?msgs:E('div',{style:{fontSize:13,color:'rgba(236,223,189,.45)',textAlign:'center',marginTop:20}},'Say hello \u2014 messages stay at this table.')),
+      E('div',{style:{display:'flex',gap:6,padding:'8px 10px',borderTop:'1px solid rgba(216,189,126,.2)'}},
+        E('input',{id:'chat-input',value:s.chatInput,maxLength:300,placeholder:'Message\u2026',onChange:(e)=>this.setState({chatInput:e.target.value}),onKeyDown:(e)=>{if(e.key==='Enter')this.sendChat();},style:{flex:1,padding:'8px 10px',borderRadius:8,border:'1px solid rgba(216,189,126,.35)',background:'rgba(8,16,12,.6)',color:'#f1e6c9',fontSize:14,outline:'none'}}),
+        E('button',{onClick:()=>this.sendChat(),style:{padding:'8px 14px',borderRadius:8,border:'1px solid #7a6126',background:'linear-gradient(180deg,#e6cd8f,#c4a256)',color:'#1b130a',fontSize:13,cursor:'pointer'}},'Send')));
+    return box;}
+  leaveTable(){this._clearSession();this.setState({view:null,seat:null,seats:null,room:'',lastPhase:null,chat:[],chatOpen:false,chatUnread:0,sel:[],declSel:{bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false}});this.send({type:'leave'});}
+  leaveBtn(compact){const E=React.createElement;return E('button',{onClick:()=>this.leaveTable(),title:'Leave this table',style:{padding:compact?'3px 9px':'6px 12px',fontSize:compact?11:13,fontFamily:"'EB Garamond',serif",color:'#f3d9c2',background:'rgba(60,18,14,.65)',border:'1px solid rgba(217,160,106,.5)',borderRadius:8,cursor:'pointer'}},'Leave table');}
+  helpBtn(compact){const E=React.createElement;return E('button',{onClick:()=>this.setState({showHelp:true}),title:'How to play',style:{padding:compact?'3px 9px':'6px 12px',fontSize:compact?11:13,fontFamily:"'EB Garamond',serif",color:'#f1e6c9',background:'rgba(8,16,12,.7)',border:'1px solid rgba(216,189,126,.4)',borderRadius:8,cursor:'pointer'}},'How to play');}
+  renderHelp(){const E=React.createElement;if(!this.state.showHelp)return null;
+    const h=(t)=>E('div',{style:{fontFamily:"'Pirata One'",fontSize:19,color:'#d9bd7e',margin:'14px 0 4px'}},t);
+    const p=(t)=>E('div',{style:{fontSize:14.5,color:'#ecdfbd',lineHeight:1.5,marginBottom:4}},t);
+    return E('div',{onClick:()=>this.setState({showHelp:false}),style:{position:'fixed',inset:0,zIndex:40,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,10,8,.72)',padding:14}},
+      E('div',{onClick:(e)=>e.stopPropagation(),style:{width:'min(640px,94vw)',maxHeight:'86vh',overflowY:'auto',padding:'26px 30px',borderRadius:18,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.45)',boxShadow:'0 30px 70px rgba(0,0,0,.6)',textAlign:'left'}},
+        E('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+          E('div',{style:{fontFamily:"'Pirata One'",fontSize:28,color:'#d9bd7e'}},'How to play Taroky'),
+          E('button',{onClick:()=>this.setState({showHelp:false}),style:{fontSize:15,padding:'6px 14px',borderRadius:9,border:'1px solid rgba(216,189,126,.4)',background:'rgba(8,16,12,.6)',color:'#f1e6c9',cursor:'pointer'}},'Close')),
+        p('A Czech trick-taking game for four, played counter-clockwise with 54 cards: trumps I\u2013XXI plus the Sk\u00fdz (highest), and four suits of eight. Each player starts with 100 chips \u2014 the goal is to win chips over many deals.'),
+        h('The deal & bidding'),
+        p('Everyone gets 12 cards; 6 go to the talon. The forehand (rotates each deal) is entitled to draw 4 from the talon \u2014 the next two players right get 1 each \u2014 unless someone bids a higher contract: \u017debr\u00e1k (win no tricks, \u00b116 each), Pan\u00e9 + XX (hold P\u00e1ni and play with the XX, high stakes), or For three (solo vs all, shop through the talon in three-card hands \u2014 keeping the 2nd costs \u00d72 if you lose, the 3rd \u00d73, and rejected cards are shown to all).'),
+        h('Partner'),
+        p('In a normal deal the forehand calls the XIX (or the next trump they lack) before drawing \u2014 whoever holds it is their secret partner, revealed when it falls. Draw the called card yourself from the talon and you choose: play alone, or throw in and pay 2 to each.'),
+        h('Discard & declarations'),
+        p('After drawing, discard back to 12 (never Kings or the I / XXI / Sk\u00fdz \u2014 discards count toward your own pile, so banking points is smart). Then anyone may call, all optional: collections (Hrub\u00e1 10+ trumps, Taroky 8\u20139, Tru\u013e = I+XXI+Sk\u00fdz, P\u00e1n\u00ed 4+ honours, Bí\u0165a 1\u20132 trumps, Uni 0), Pag\u00e1t ultimo (\u00b14: win the last trick with the I), Contra (defenders double the payout), Rey (declarers re-double, \u00d74), and Contra pag\u00e1t.'),
+        h('Play'),
+        p('Follow the led suit; if you cannot, you must trump; trumps beat suit cards. Play passes counter-clockwise. Card points: Kings & 5-pt trumps 5, Queens 4, Cavaliers 3, Jacks 2, others 1 per trick-pair (106 total).'),
+        h('Scoring'),
+        p('The side with more points wins the deal \u2014 defenders win a 53\u201353 tie. Winners collect 2 chips + 1 per 5 points over 53 (rounded up); Pan\u00e9 and For three divide by 3.33 instead \u2014 much bigger swings. Taking all 12 tricks is Valat: game value 20. Solo players pay or collect from all three opponents.')));}
+  styleSelectEl(compact){const E=React.createElement;return E('select',{value:this.state.cardStyle,onChange:(e)=>this.setCardStyle(e.target.value),style:{padding:compact?'3px 6px':'6px 12px',fontSize:compact?11:13,fontFamily:"'EB Garamond',serif",color:'#f1e6c9',background:'rgba(8,16,12,.7)',border:'1px solid rgba(216,189,126,.4)',borderRadius:8,outline:'none',cursor:'pointer'}},
+    E('option',{value:'standard'},'Standard cards'),E('option',{value:'traditional'},'Traditional cards'));}
+  renderStatus(){const E=React.createElement;const s=this.state;const on=s.connected;return E('div',{style:{position:'absolute',top:78,left:28,zIndex:5,display:'flex',alignItems:'center',gap:7,fontSize:13,color:'rgba(236,223,189,.7)'}},
+    E('div',{style:{width:9,height:9,borderRadius:'50%',background:on?'#7fd39b':'#d38b8b',boxShadow:on?'0 0 8px #7fd39b':'none'}}),on?(s.room?('Connected \u00b7 '+s.room):'Connected'):'Offline');}
+  renderToast(){const E=React.createElement;const t=this.state.toast;if(!t)return E('div',{style:{display:'none'}});return E('div',{style:{position:'absolute',bottom:26,left:'50%',transform:'translateX(-50%)',zIndex:14,padding:'9px 20px',borderRadius:20,background:'rgba(40,16,16,.85)',border:'1px solid rgba(227,163,163,.5)',color:'#f0d9d9',fontSize:15,animation:'fadein .2s'}},t);}
+
+  // ======================= MOBILE LAYOUT (narrow / portrait) =======================
+  renderMobile(){const E=React.createElement;const s=this.state;if(!s.view)return this.renderLobby();const v=s.view;
+    const others=[this.seatAt('W'),this.seatAt('N'),this.seatAt('E')]; // W ← N ← E: play flows right-to-left (counter-clockwise)
+    const top=E('div',{key:'top',style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 14px',flex:'0 0 auto'}},
+      E('div',{style:{display:'flex',alignItems:'center',gap:8}},E('div',{style:{fontFamily:"'Pirata One'",fontSize:23,color:'#d9bd7e',lineHeight:1}},'Taroky'),this.styleSelectEl(true),this.helpBtn(true),this.chatBtn(true),this.leaveBtn(true),E('div',{style:{width:8,height:8,borderRadius:'50%',background:s.connected?'#7fd39b':'#d38b8b'}})),
+      E('div',{style:{textAlign:'right'}},E('div',{style:{fontSize:13,color:'#f1e6c9',fontFamily:"'Cormorant Garamond'"}},this.contractText(v)),E('div',{style:{fontSize:11,color:'rgba(216,189,126,.6)'}},'Deal '+v.deal)));
+    const arrow=(k)=>E('div',{key:k,style:{alignSelf:'center',color:'rgba(216,189,126,.55)',fontSize:15,flex:'0 0 auto',lineHeight:1}},'\u2190');
+    const oppRow=E('div',{key:'opp',style:{display:'flex',gap:5,padding:'0 10px',flex:'0 0 auto',alignItems:'stretch'}},[this.mobileSeatBox(others[0]),arrow('a1'),this.mobileSeatBox(others[1]),arrow('a2'),this.mobileSeatBox(others[2])]);
+    const dirHint=(v.phase==='playing'||v.phase==='bidding')?E('div',{key:'dir',style:{textAlign:'center',fontSize:10,letterSpacing:1.5,textTransform:'uppercase',color:'rgba(216,189,126,.45)',padding:'3px 0 0',flex:'0 0 auto'}},'play passes counter-clockwise \u2190'+(v.aiLevel?' \u00b7 '+v.aiLevel+' AI':'')):null;
+    const _mst=this.statusLine(v);const _mmsg=_mst?_mst.text:v.message;const _mwin=_mst&&_mst.win;
+    const center=E('div',{key:'ctr',style:{flex:'1 1 auto',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,padding:'6px 12px',minHeight:0}},
+      this.renderMobileTrick(),_mmsg?E('div',{style:{padding:'7px 18px',borderRadius:16,background:_mwin?'rgba(184,151,90,.24)':'rgba(8,16,12,.66)',border:'1px solid '+(_mwin?this.GOLDL:'rgba(216,189,126,.3)'),color:_mwin?'#f8eecb':'#ecdfbd',fontSize:14,fontWeight:_mwin?600:400,textAlign:'center'}},_mmsg):null);
+    const _dl=this.declList(v);const declStrip=_dl.length?E('div',{key:'dl',style:{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'center',padding:'6px 12px 0',flex:'0 0 auto'}},_dl.map((l,i)=>E('div',{key:i,style:{fontSize:11,color:'#ecdfbd',background:'rgba(8,16,12,.55)',border:'1px solid rgba(216,189,126,.25)',borderRadius:10,padding:'2px 8px'}},l))):null;
+    return E('div',{style:{position:'fixed',inset:0,display:'flex',flexDirection:'column',background:'radial-gradient(circle at 50% 32%,#2f5e46,#234b38 52%,#14301e)',overflow:'hidden'}},
+      top,(!s.connected&&v)?E('div',{key:'reconn',style:{textAlign:'center',fontSize:12,padding:'5px 10px',background:'rgba(90,30,26,.85)',borderTop:'1px solid #d9a06a',borderBottom:'1px solid #d9a06a',color:'#f8e8cb',flex:'0 0 auto'}},'Connection lost \u2014 reconnecting\u2026 your seat is held'):null,
+      oppRow,dirHint,declStrip,center,this.renderMobileHand(),this.renderMobileOverlay(),this.renderToast(),this.renderHelp(),this.renderChat(true));}
+
+  mobileSeatBox(seat){const E=React.createElement;const v=this.state.view;const p=v.players[seat];const active=v.turn===seat&&v.phase==='playing';const bidTurn=v.phase==='bidding'&&v.bidSeat===seat;const isDeclarer=v.mode&&seat===v.declarer;const isPartner=seat===v.partner;const gold=active||bidTurn||isDeclarer||isPartner;
+    let role='';if(isPartner)role='partner';else if(isDeclarer)role=(v.mode==='zebrak'?'\u017debr\u00e1k':v.mode==='pane'?'pan\u00e9':v.mode==='forthree'?'3':'decl');
+    return E('div',{key:seat,style:{flex:'1 1 0',minWidth:0,padding:'6px 6px',borderRadius:10,background:'rgba(8,16,12,.6)',border:'1px solid '+(gold?this.GOLDL:'rgba(216,189,126,.22)'),boxShadow:(active||bidTurn)?'0 0 12px rgba(216,189,126,.45)':'none',textAlign:'center'}},
+      E('div',{style:{display:'flex',justifyContent:'center',alignItems:'center',gap:5,marginBottom:2}},
+        E('div',{style:{width:16,height:24,borderRadius:3,background:'#5c1c23',border:'1px solid '+this.GOLD,flex:'0 0 auto'}}),
+        E('div',{style:{fontFamily:"'Cormorant Garamond'",fontSize:15,color:'#f1e6c9'}},p.cards)),
+      E('div',{style:{fontSize:13,color:(active||bidTurn)?'#f6eccf':'rgba(236,223,189,.82)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},p.name+(seat===v.you?' (you)':'')),
+      E('div',{style:{fontSize:11,color:'#d9bd7e'}},p.chips+' chips'),
+      role?E('div',{style:{fontSize:10,letterSpacing:1,textTransform:'uppercase',color:'#d9bd7e'}},role):null);}
+
+  renderMobileTrick(){const E=React.createElement;const v=this.state.view;const held=!(v.trick&&v.trick.length)&&v.lastTrick&&v.lastTrick.seq!==this.state.heldHidden;const t=held?v.lastTrick.cards:(v.trick||[]);const winner=held?v.lastTrick.winner:null;if(!t.length)return E('div',{style:{color:'rgba(216,189,126,.4)',fontSize:14,fontFamily:"'Cormorant Garamond'"}},'\u2014');
+    return E('div',{style:{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',alignItems:'flex-start'}},t.map(p=>{const wg=held&&p.seat===winner;return E('div',{key:p.seat,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:3,transition:'transform .2s',transform:wg?'scale(1.07)':'none',filter:wg?'drop-shadow(0 0 9px rgba(216,189,126,.95))':'none'}},this.cardEl(p.card,{faceUp:true,w:62,key:p.seat}),E('div',{style:{fontSize:10,color:wg?'#f1e6c9':'rgba(236,223,189,.6)',maxWidth:64,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},v.players[p.seat].name));}));}
+
+  renderMobileHand(){const E=React.createElement;const s=this.state;const v=s.view;const cards=v.hand||[];const legal=new Set(v.legal||[]);const isPlay=v.phase==='playing'&&v.turn===v.you;const isDiscard=v.phase==='discard'&&(v.discardWaiting||[]).includes(v.you);const w=72;
+    const bar=isDiscard?E('div',{style:{display:'flex',justifyContent:'center',alignItems:'center',gap:14,padding:'0 12px 4px'}},
+      E('div',{style:{color:'#ecdfbd',fontSize:15}},'Lay aside ',E('b',{style:{fontFamily:"'Cormorant Garamond'",fontSize:20,color:'#f1e6c9'}},s.sel.length),' / '+(v.discardNeed||0)),
+      E('button',{onClick:()=>{if(s.sel.length===(v.discardNeed||0))this.sendAction({type:'discard',cardIds:s.sel});},style:{fontFamily:"'EB Garamond'",fontSize:15,letterSpacing:1,padding:'9px 22px',borderRadius:10,cursor:'pointer',color:'#1b130a',background:'linear-gradient(180deg,#e6cd8f,#c4a256)',border:'1px solid #7a6126'}},'Confirm')):null;
+    const row=E('div',{style:{display:'flex',gap:5,overflowX:'auto',padding:'16px 12px 8px',WebkitOverflowScrolling:'touch'}},cards.map(c=>{
+      const sel=s.sel.indexOf(c.id)>=0;const isL=legal.has(c.id);const canClick=isDiscard||(isPlay&&isL);const dim=isPlay&&!isL;
+      return E('div',{key:c.id,style:{flex:'0 0 auto',transform:sel?'translateY(-14px)':'none',transition:'transform .12s'}},this.cardEl(c,{faceUp:true,w:w,key:c.id,outline:sel||(isPlay&&isL),dim:dim,onClick:canClick?(()=>this.clickMyCard(c)):(()=>{if(isPlay)this.toast('Not a legal card.');})}));}));
+    return E('div',{key:'hand',style:{flex:'0 0 auto',paddingTop:8,paddingBottom:10,background:'rgba(6,12,9,.55)',borderTop:'1px solid rgba(216,189,126,.2)'}},bar,row);}
+
+  mobileModal(title,sub,kids){const E=React.createElement;return E('div',{style:{position:'fixed',left:0,right:0,top:0,bottom:170,zIndex:20,display:'flex',alignItems:'flex-start',justifyContent:'center',background:'linear-gradient(180deg,rgba(6,10,8,.55),rgba(6,10,8,.25))',paddingTop:'min(96px,12vh)',overflowY:'auto'}},
+    E('div',{style:{width:'min(520px,94vw)',padding:'18px 18px 16px',borderRadius:18,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.4)',boxShadow:'0 14px 44px rgba(0,0,0,.5)',textAlign:'center'}},
+      E('div',{style:{fontFamily:"'Pirata One'",fontSize:23,color:'#d9bd7e'}},title),sub?E('div',{style:{fontSize:13,color:'rgba(236,223,189,.68)',marginTop:2}},sub):null,
+      E('div',{style:{display:'flex',gap:9,flexWrap:'wrap',justifyContent:'center',marginTop:15}},kids)));}
+
+  renderMobileOverlay(){const E=React.createElement;const s=this.state;const v=s.view;const me=v.you;
+    if(v.phase==='bidding'&&v.bidSeat===me){const hand=v.hand||[];const fp=hand.filter(c=>c.points===5).length;const lvl=v.bid.level;const k=[];
+      k.push(this.chip('Pass',lvl>0?'let it stand':'draw 4','',false,()=>this.sendAction({type:'bid',level:0}),'pass'));
+      if(lvl<1)k.push(this.chip('\u017debr\u00e1k','take no tricks','\u00b116',false,()=>this.sendAction({type:'bid',level:1}),'z'));
+      if(fp>=4&&lvl<2)k.push(this.chip('Pan\u00e9 + XX','play w/ the 20','',false,()=>this.sendAction({type:'bid',level:2}),'p'));
+      if(lvl<3)k.push(this.chip('For three','solo vs 3','\u00d73 shop,lose',false,()=>this.sendAction({type:'bid',level:3}),'f'));
+      return this.mobileModal('Your bid','Standing: '+(v.bid.level===0?v.players[v.bid.seat].name+' draws 4':v.players[v.bid.seat].name+' \u00b7 '+(v.bid.level===1?'\u017debr\u00e1k':v.bid.level===2?'Pan\u00e9':'For three')),k);}
+    if(v.phase==='talonHand'&&v.declarer===me&&v.f3Showing){const showing=v.f3Showing;const first=(v.revealedTalon||[]).length===0;
+      const cardsRow=E('div',{style:{display:'flex',gap:10,justifyContent:'center',width:'100%',marginBottom:4}},showing.map(c=>this.cardEl(c,{faceUp:true,w:70,key:c.id})));
+      const btns=first?[this.chip('Keep these','1st hand','',false,()=>this.sendAction({type:'talonHand',choice:'keep1'}),'k1'),this.chip('Swap','next 3','',false,()=>this.sendAction({type:'talonHand',choice:'swap'}),'sw')]
+        :[this.chip('Keep these','2nd hand','\u00d72 lose',false,()=>this.sendAction({type:'talonHand',choice:'keep2'}),'k2'),this.chip('Back to first','3rd hand','\u00d73 lose',false,()=>this.sendAction({type:'talonHand',choice:'back'}),'k3')];
+      return this.mobileModal('For three \u2014 take three',null,[cardsRow].concat(btns));}
+    if(v.phase==='talonChoice'&&v.talonChoiceSeat===me)return this.mobileModal('You drew the '+v.calledLabel,'Partner card is in your hand.',[this.chip('Play alone','1 vs 3','',false,()=>this.sendAction({type:'talonChoice',choice:'solo'}),'s'),this.chip('Throw in','pay 2 each','',false,()=>this.sendAction({type:'talonChoice',choice:'throwin'}),'t')]);
+    if(v.phase==='declare'&&(v.declPending||[]).includes(me))return this.renderMobileDeclare();
+    if(v.phase==='declare')return this.mobileModal('Declarations','Waiting for other players\u2026',[]);
+    if(v.phase==='scoring')return this.renderMobileScoring();
+    return null;}
+
+  renderMobileDeclare(){const E=React.createElement;const v=this.state.view;const d=this.state.declSel;const hand=v.hand||[];const tr=hand.filter(c=>c.kind==='trump').length;const fp=hand.filter(c=>c.points===5).length;const hasPagat=hand.some(c=>c.kind==='trump'&&c.strength===1);
+    const elig=[];if(tr>=10)elig.push('hrube');else if(tr>=8)elig.push('tarocy');else if(tr>=1&&tr<=2)elig.push('bite');else if(tr===0)elig.push('uni');if(hand.filter(c=>c.court==='K').length===4)elig.push('rosanna');else if(fp>=4)elig.push('pawnee');if(hand.some(c=>c.kind==='trump'&&c.strength===1)&&hand.some(c=>c.kind==='trump'&&c.strength===21)&&hand.some(c=>c.kind==='trump'&&c.strength===22))elig.push('trul');
+    const m=this.declModel(true);
+    const begin=E('button',{key:'begin',onClick:()=>this.submitDeclare(),style:{width:'100%',marginTop:6,fontFamily:"'EB Garamond'",fontSize:16,letterSpacing:1,padding:'11px 0',borderRadius:11,cursor:'pointer',color:'#1b130a',background:'linear-gradient(180deg,#e6cd8f,#c4a256)',border:'1px solid #7a6126'}},m.btn);
+    const body=(m.recap?[m.recap]:[]).concat(m.items.length?m.items:[E('div',{key:'n',style:{fontSize:14,color:'rgba(236,223,189,.5)'}},'Nothing to declare.')]).concat([begin]);
+    return this.mobileModal(m.title,m.sub,body);}
+
+  renderMobileScoring(){const E=React.createElement;const v=this.state.view;const r=v.result||{lines:[],delta:[0,0,0,0]};const showPts=r.kind==='hand';
+    const title=r.winnerNames?(r.winnerNames+' win'):(r.kind==='zebrak'?(v.players[v.declarer].name+(r.success?' win \u017debr\u00e1k':' lose \u017debr\u00e1k')):'Hand over');
+    const body=[];
+    if(showPts)body.push(E('div',{key:'pts',style:{fontSize:12,color:'rgba(236,223,189,.62)',letterSpacing:1,textTransform:'uppercase',marginBottom:8}},'Decl '+r.declPoints+' \u00b7 Def '+r.defPoints));
+    body.push(E('div',{key:'lines',style:{textAlign:'left',display:'flex',flexDirection:'column',gap:4,marginBottom:12}},(r.lines||[]).map((l,i)=>E('div',{key:i,style:{fontSize:13.5,color:'#ecdfbd',borderBottom:'1px solid rgba(216,189,126,.12)',paddingBottom:4}},l))));
+    body.push(E('div',{key:'chips',style:{display:'flex',justifyContent:'center',gap:14,marginBottom:14}},v.players.map((p,i)=>{const dl=(r.delta||[])[i]||0;return E('div',{key:i,style:{textAlign:'center'}},E('div',{style:{fontFamily:"'Cormorant Garamond'",fontSize:26,color:'#f1e6c9',lineHeight:1}},p.chips),E('div',{style:{fontSize:11,color:'rgba(216,189,126,.7)',maxWidth:70,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},p.name),E('div',{style:{fontSize:12,color:dl>0?'#9fd6a0':dl<0?'#e3a3a3':'rgba(236,223,189,.4)'}},(dl>0?'+':'')+dl));})));
+    if((v.trickHistory||[]).length)body.push(E('button',{key:'rev',onClick:()=>this.setState({showTricks:true}),style:{width:'100%',marginBottom:8,fontFamily:"'EB Garamond'",fontSize:14.5,letterSpacing:.5,padding:'10px 0',borderRadius:11,cursor:'pointer',color:'#ecdfbd',background:'rgba(8,16,12,.6)',border:'1px solid rgba(216,189,126,.4)'}},'Review tricks'));
+    body.push(E('button',{key:'next',onClick:()=>this.sendAction({type:'nextDeal'}),style:{width:'100%',fontFamily:"'EB Garamond'",fontSize:16,letterSpacing:1,padding:'12px 0',borderRadius:11,cursor:'pointer',color:'#1b130a',background:'linear-gradient(180deg,#e6cd8f,#c4a256)',border:'1px solid #7a6126'}},'Deal next hand'));
+    return E('div',{style:{position:'fixed',inset:0,zIndex:20,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,10,8,.62)',padding:16}},
+      E('div',{style:{width:'min(520px,94vw)',padding:'24px 22px',borderRadius:18,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.45)',textAlign:'center'}},
+        E('div',{style:{fontFamily:"'Pirata One'",fontSize:24,color:'#d9bd7e',marginBottom:8}},title),E('div',{},body)),
+      this.state.showTricks?this.renderTrickReview(true):null);}
+
+  renderVals(){const m=this.state.mobile;const s=this.state;const felt='radial-gradient(circle at 50% 42%,#2f5e46,#234b38 46%,#14301e)';const dark='radial-gradient(circle at 50% 28%,#16181d,#08090c)';const fill=!m&&(s.winH||900)<600;return{scale:this.state.scale,deskDisplay:m?'none':'block',outerBg:fill?felt:dark,tableRad:fill?'0px':'22px',mobileEl:m?this.renderMobile():null,statusEl:this.renderStatus(),tableEl:this.renderTable(),overlayEl:this.renderOverlay(),toastEl:this.renderToast(),helpEl:m?null:this.renderHelp()};}
+}
+</script>
+</body>
+</html>
