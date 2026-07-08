@@ -32,7 +32,7 @@
   <div id="__bundler_loading">Unpacking...</div>
 
   <script>
-    
+
 document.addEventListener('DOMContentLoaded', async function() {
   const loading = document.getElementById('__bundler_loading');
   function setStatus(msg) { if (loading) loading.textContent = msg; }
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       old.replaceWith(s);
       if (p) await p;
     }
-    // Babel standalone auto-transforms type=text/babel on DOMContentLoaded,
+    // Babel standalone auto-transforms type=text/babel on DOMContentLoadeds,
     // which fired before we swapped the document. Trigger manually if present.
     if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
       window.Babel.transformScriptTags();
