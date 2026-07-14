@@ -194,7 +194,7 @@
         case 'discard':      return discard(g, seat, a.cardIds);
         case 'declare':      return declare(g, seat, a);               // {bonuses:[], ultimo:bool, contra:bool, rey:bool, pagatContra:bool}
         case 'play':         return play(g, seat, a.cardId);
-        case 'nextDeal':     newDeal(g); return { ok: true };
+        case 'nextDeal':     if (g.phase !== 'idle' && g.phase !== 'scoring') return { ok: false, error: 'hand in progress' }; newDeal(g); return { ok: true };
         default:             return { ok: false, error: 'unknown action ' + a.type };
       }
     } catch (e) { return { ok: false, error: e.message }; }

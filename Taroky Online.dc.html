@@ -91,7 +91,7 @@ class Component extends DCLogic {
     ws.onerror=()=>{if(this._dead)return;this.setState({connecting:false});};
     ws.onmessage=(ev)=>{if(this._dead)return;let m;try{m=JSON.parse(ev.data);}catch(e){return;}
       if(m.type==='tables')this.setState({tables:m.tables||[],leaderboard:m.leaderboard||this.state.leaderboard});
-      else if(m.type==='joined'){this._token=m.token||this._token;this.setState({seat:m.seat,seats:m.seats,room:m.roomId||this.state.room});this._saveSession();this.send({type:'start'});}
+      else if(m.type==='joined'){this._token=m.token||this._token;this.setState({seat:m.seat,seats:m.seats,room:m.roomId||this.state.room});this._saveSession();}
       else if(m.type==='state')this.applyView(m.view);
       else if(m.type==='pong'){}
       else if(m.type==='chatHistory')this.setState({chat:(m.messages||[]).slice(-50)});

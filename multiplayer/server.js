@@ -29,7 +29,8 @@ const T = require('./taroky-engine');
 
 // ---------- Elo ratings (persisted to disk) ----------
 // Set RATINGS_FILE to a path on a mounted volume so ratings survive redeploys.
-const RATINGS_FILE = process.env.RATINGS_FILE || path.join(__dirname, 'ratings.json');
+// If a Railway volume is mounted at /data it is used automatically.
+const RATINGS_FILE = process.env.RATINGS_FILE || (fs.existsSync('/data') ? '/data/ratings.json' : path.join(__dirname, 'ratings.json'));
 let ratings = {};                 // name -> { elo, deals }
 try { ratings = JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf8')); } catch (e) { /* first run */ }
 let ratingsSaveT = null;
@@ -245,11 +246,12 @@ function handle(ws, msg) {
         }
       }
       // Name fallback: if their name matches a seat not occupied by a human (a bot
-      // currently covering it), give them that seat back \u2014 covers expired tokens,
-      // cleared storage, or rejoining from a different device.
-      if (seat < 0 && msg.name) {
+      // currently covering it), give them that seat back — covers expired tokens,
+      // cleared storage, or rejoining from a different device. Case/space-insensitive.
+      const norm = (x) => ('' + (x || '')).trim().toLowerCase();
+      if (seat < 0 && norm(msg.name)) {
         for (let i = 0; i < 4; i++) {
-          if (!room.seats[i] && room.names[i] === msg.name) {
+          if (!room.seats[i] && norm(room.names[i]) === norm(msg.name)) {
             seat = i;
             if (room.reserved[i]) { clearTimeout(room.reserved[i].timer); room.reserved[i] = null; }
             break;
