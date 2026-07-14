@@ -60,7 +60,7 @@ class Component extends DCLogic {
     url:'wss://tarotonlinegame-production.up.railway.app',room:'',name:'Player',
     aiChoice:'advanced',leaderboard:[],showTricks:false,chat:[],chatOpen:false,chatInput:'',chatUnread:0,sel:[],declSel:{bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false},hovered:null,lastPhase:null};
 
-  componentDidMount(){try{const cs=localStorage.getItem('taroky-cardstyle');if(cs==='traditional'||cs==='standard')this.setState({cardStyle:cs});}catch(e){}this.fit();this._onR=()=>this.fit();window.addEventListener('resize',this._onR);this.connect();this._lobbyPoll=setInterval(()=>{if(!this._dead&&this.ws&&this.ws.readyState===1&&!this.state.view)this.send({type:'list'});},3000);
+  componentDidMount(){try{const cs=localStorage.getItem('taroky-cardstyle');if(cs==='traditional'||cs==='standard')this.setState({cardStyle:cs});}catch(e){}try{const pp=localStorage.getItem('taroky-playerpw');if(pp)this.setState({playerPw:pp});}catch(e){}this.fit();this._onR=()=>this.fit();window.addEventListener('resize',this._onR);this.connect();this._lobbyPoll=setInterval(()=>{if(!this._dead&&this.ws&&this.ws.readyState===1&&!this.state.view)this.send({type:'list'});},3000);
     // App-level keepalive: some proxies drop WebSockets that carry no data frames.
     this._keepAlive=setInterval(()=>{if(!this._dead&&this.ws&&this.ws.readyState===1){this.send({type:'ping'});if(this.state.view)this._saveSession();}},25000);}
   componentWillUnmount(){this._dead=true;clearInterval(this._lobbyPoll);clearInterval(this._keepAlive);clearTimeout(this._rt);window.removeEventListener('resize',this._onR);if(this.ws)try{this.ws.close();}catch(e){}}
@@ -81,8 +81,8 @@ class Component extends DCLogic {
     clearTimeout(this._ct);this._ct=setTimeout(()=>{if(ws.readyState===0){try{ws.close();}catch(e){}if(ws.onclose)ws.onclose();}},6000);
     ws.onopen=()=>{if(this._dead)return;clearTimeout(this._ct);this._retry=0;this.setState({connected:true,connecting:false});
       // Resume our seat: same page-session first, then a recent saved session (reload / brief drop).
-      if(this.state.room&&this._token){this.send({type:'join',roomId:this.state.room,name:(this.state.name||'Player').trim(),token:this._token});}
-      else{const sess=this._loadSession();if(sess){this._token=sess.token;this.setState({room:sess.room,name:sess.name||this.state.name});this.send({type:'join',roomId:sess.room,name:sess.name||'Player',token:sess.token});}}};
+      if(this.state.room&&this._token){this.send({type:'join',roomId:this.state.room,name:(this.state.name||'Player').trim(),token:this._token,playerPw:(this.state.playerPw||'').trim()});}
+      else{const sess=this._loadSession();if(sess){this._token=sess.token;this.setState({room:sess.room,name:sess.name||this.state.name});this.send({type:'join',roomId:sess.room,name:sess.name||'Player',token:sess.token,playerPw:(this.state.playerPw||'').trim()});}}};
     ws.onclose=()=>{if(this._dead)return;
       // Keep the table on screen and quietly retry \u2014 most drops are seconds long.
       const n=(this._retry=(this._retry||0)+1);
@@ -97,8 +97,9 @@ class Component extends DCLogic {
       else if(m.type==='chatHistory')this.setState({chat:(m.messages||[]).slice(-50)});
       else if(m.type==='chat'){const chat=this.state.chat.concat([m.message]).slice(-100);const patch={chat:chat};if(!this.state.chatOpen&&m.message.seat!==this.state.seat)patch.chatUnread=this.state.chatUnread+1;this.setState(patch,()=>{const el=document.getElementById('chat-scroll');if(el)el.scrollTop=el.scrollHeight;});}
       else if(m.type==='reject')this.toast(m.error||'Move rejected');
+      else if(m.type==='info')this.toast(m.message||'OK');
       else if(m.type==='error'){if(/full/i.test(m.error||'')&&!this.state.view)this._clearSession();this.toast(m.error||'Error');}};}
-  joinTable(roomId){const id=(roomId||'').trim();if(!id){this.toast('Enter a table name');return;}this._retry=0;this._token=null;this.setState({room:id,chat:[],chatUnread:0});this.send({type:'join',roomId:id,name:(this.state.name||'Player').trim(),ai:this.state.aiChoice});}
+  joinTable(roomId,pw){const id=(roomId||'').trim();if(!id){this.toast('Enter a table name');return;}this._retry=0;this._token=null;try{localStorage.setItem('taroky-playerpw',(this.state.playerPw||'').trim());}catch(e){}this.setState({room:id,chat:[],chatUnread:0,pwFor:null});this.send({type:'join',roomId:id,name:(this.state.name||'Player').trim(),ai:this.state.aiChoice,password:(pw||'').trim(),playerPw:(this.state.playerPw||'').trim()});}
   applyView(view){const prev=this.state.lastPhase;const reset=(view.phase!==prev);const patch={view:view,seat:view.you,lastPhase:view.phase};
     if(reset){patch.sel=[];patch.declSel={bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false};patch.showTricks=false;}
     if(this.state.hovered&&!(view.hand||[]).some(c=>c.id===this.state.hovered))patch.hovered=null;
@@ -245,19 +246,25 @@ class Component extends DCLogic {
       body=E('div',{style:{textAlign:'center',color:'rgba(236,223,189,.72)',padding:'16px 0'}},s.connecting?'Connecting to the server\u2026':'Not connected.',
         s.connecting?null:E('div',{style:{marginTop:14}},btn('Retry',()=>this.connect(),false)));
     }else{
-      const rows=(s.tables||[]).map(t=>E('div',{key:t.id,style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px',borderRadius:10,background:'rgba(8,16,12,.5)',border:'1px solid rgba(216,189,126,.22)',marginBottom:8}},
-        E('div',{style:{textAlign:'left',minWidth:0}},
-          E('div',{style:{color:'#f1e6c9',fontSize:17,fontFamily:"'Cormorant Garamond'",whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},t.id),
-          E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)'}},t.humans+' / 4 players'+(t.humans>=4?' \u00b7 full':(t.humans===1?' \u00b7 3 bots':''))+(t.ai?' \u00b7 '+t.ai+' AI':''))),
-        btn(t.humans>=4?'Full':'Join',()=>this.joinTable(t.id),t.humans>=4)));
+      const rows=(s.tables||[]).map(t=>E('div',{key:t.id,style:{borderRadius:10,background:'rgba(8,16,12,.5)',border:'1px solid rgba(216,189,126,.22)',marginBottom:8}},
+        E('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px'}},
+          E('div',{style:{textAlign:'left',minWidth:0}},
+            E('div',{style:{color:'#f1e6c9',fontSize:17,fontFamily:"'Cormorant Garamond'",whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},(t.locked?'\ud83d\udd12 ':'')+t.id),
+            E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)'}},t.humans+' / 4 players'+(t.humans>=4?' \u00b7 full':(t.humans===1?' \u00b7 3 bots':''))+(t.ai?' \u00b7 '+t.ai+' AI':'')+(t.locked?' \u00b7 private':''))),
+          btn(t.humans>=4?'Full':'Join',()=>{if(t.locked){this.setState({pwFor:s.pwFor===t.id?null:t.id,joinPw:''});}else this.joinTable(t.id);},t.humans>=4)),
+        (t.locked&&s.pwFor===t.id)?E('div',{style:{display:'flex',gap:8,padding:'0 12px 10px'}},
+          E('input',{type:'password',value:s.joinPw||'',placeholder:'table password',autoFocus:true,onChange:e=>this.setState({joinPw:e.target.value}),onKeyDown:e=>{if(e.key==='Enter')this.joinTable(t.id,s.joinPw);},style:Object.assign({},inputStyle,{flex:1,padding:'8px 10px'})}),
+          btn('Enter',()=>this.joinTable(t.id,s.joinPw),false)):null));
       const list=rows.length?rows:[E('div',{key:'none',style:{color:'rgba(236,223,189,.5)',fontSize:14,textAlign:'center',padding:'14px 0'}},'No active tables yet \u2014 create one below.')];
       body=E('div',{},
         E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:8,textAlign:'left'}},'Active tables'),
         E('div',{style:{maxHeight:230,overflowY:'auto',marginBottom:18}},list),
         E('div',{style:{display:'flex',gap:8,alignItems:'flex-end'}},
           E('label',{style:{flex:1,textAlign:'left'}},E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:4}},'New table'),
-            E('input',{value:s.newTable,placeholder:'table name',onChange:e=>this.setState({newTable:e.target.value}),onKeyDown:e=>{if(e.key==='Enter')this.joinTable(s.newTable);},style:inputStyle})),
-          btn('Create',()=>this.joinTable(s.newTable),false)),
+            E('input',{value:s.newTable,placeholder:'table name',onChange:e=>this.setState({newTable:e.target.value}),onKeyDown:e=>{if(e.key==='Enter')this.joinTable(s.newTable,s.newPw);},style:inputStyle})),
+          E('label',{style:{width:150,textAlign:'left'}},E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:4}},'Password'),
+            E('input',{type:'password',value:s.newPw||'',placeholder:'optional',onChange:e=>this.setState({newPw:e.target.value}),onKeyDown:e=>{if(e.key==='Enter')this.joinTable(s.newTable,s.newPw);},style:inputStyle})),
+          btn('Create',()=>this.joinTable(s.newTable,s.newPw),false)),
         E('div',{style:{display:'flex',gap:8,alignItems:'center',marginTop:10}},
           E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)'}},'Bot skill'),
           ['novice','advanced','expert','insane'].map(lv=>E('div',{key:lv,onClick:()=>this.setState({aiChoice:lv}),style:{cursor:'pointer',padding:'6px 12px',borderRadius:9,fontSize:13,letterSpacing:.5,border:'1px solid '+(s.aiChoice===lv?this.GOLDL:'rgba(216,189,126,.3)'),background:s.aiChoice===lv?'rgba(184,151,90,.22)':'rgba(8,16,12,.5)',color:s.aiChoice===lv?'#f1e6c9':'rgba(236,223,189,.65)'}},lv.charAt(0).toUpperCase()+lv.slice(1)))),
@@ -273,13 +280,18 @@ class Component extends DCLogic {
             E('div',{style:{flex:1,textAlign:'left',fontSize:14,color:p.name===(s.name||'').trim()?'#e6cd8f':'#ecdfbd',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},p.name),
             E('div',{style:{fontSize:11.5,color:'rgba(236,223,189,.45)'}},p.deals+' deals'),
             E('div',{style:{width:44,textAlign:'right',fontSize:14.5,color:'#d9bd7e',fontVariantNumeric:'tabular-nums'}},p.elo)))),
-          E('div',{style:{fontSize:10.5,color:'rgba(236,223,189,.35)',marginTop:6,textAlign:'left'}},'Elo per deal, under your table name \u2014 win chips to climb.')):null);
+          E('div',{style:{fontSize:10.5,color:'rgba(236,223,189,.35)',marginTop:6,textAlign:'left'}},'Elo per deal, under your table name \u2014 win chips to climb. Set a player password to protect your name.',
+            (s.playerPw||'').trim()?E('span',{onClick:()=>{if(confirm('Reset the Elo for "'+(s.name||'').trim()+'" back to 1200?'))this.send({type:'resetElo',name:(s.name||'').trim(),playerPw:(s.playerPw||'').trim()});},style:{color:'#d9bd7e',cursor:'pointer',marginLeft:6,textDecoration:'underline'}},'Reset my Elo'):null)):null);
     }
     return E('div',{style:{position:'absolute',inset:0,zIndex:12,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,10,8,.55)',padding:16}},
       E('div',{style:{width:'min(440px,94vw)',padding:'clamp(22px,5vw,32px) clamp(20px,5vw,34px)',borderRadius:18,background:'radial-gradient(circle at 50% 0%,#262a20,#15170f)',border:'1px solid rgba(216,189,126,.45)',boxShadow:'0 30px 70px rgba(0,0,0,.6)'}},
         E('div',{style:{fontFamily:"'Pirata One'",fontSize:30,color:'#d9bd7e',textAlign:'center',marginBottom:4}},'Taroky tables'),
         E('div',{style:{fontSize:13,color:'rgba(236,223,189,.6)',textAlign:'center',marginBottom:20}},'Join a table or start your own. Empty seats are bots. ',E('span',{onClick:()=>this.setState({showHelp:true}),style:{color:'#d9bd7e',cursor:'pointer',textDecoration:'underline'}},'How to play')),
-        field('Your name','name','Player'),
+        E('div',{style:{display:'flex',gap:8}},
+          E('div',{style:{flex:1}},field('Your name','name','Player')),
+          E('label',{style:{width:150,textAlign:'left',display:'block',marginBottom:14}},
+            E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:4}},'Player password'),
+            E('input',{type:'password',value:s.playerPw||'',placeholder:'optional',onChange:e=>this.setState({playerPw:e.target.value}),style:{width:'100%',padding:'10px 12px',borderRadius:9,border:'1px solid rgba(216,189,126,.35)',background:'rgba(8,16,12,.6)',color:'#f1e6c9',fontSize:15,outline:'none',boxSizing:'border-box'}}))),
         body));}
 
   renderBidPanel(){const v=this.state.view;const hand=v.hand||[];const fp=hand.filter(c=>c.points===5).length;const lvl=v.bid.level;const k=[];

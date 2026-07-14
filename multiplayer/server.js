@@ -19,6 +19,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
 // The bundled web client (single self-contained HTML). Served at the root so
@@ -31,8 +32,28 @@ const T = require('./taroky-engine');
 // Set RATINGS_FILE to a path on a mounted volume so ratings survive redeploys.
 // If a Railway volume is mounted at /data it is used automatically.
 const RATINGS_FILE = process.env.RATINGS_FILE || (fs.existsSync('/data') ? '/data/ratings.json' : path.join(__dirname, 'ratings.json'));
-let ratings = {};                 // name -> { elo, deals }
+let ratings = {};                 // name -> { elo, deals, pwh?, salt? }  (pwh/salt = claimed-name protection)
 try { ratings = JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf8')); } catch (e) { /* first run */ }
+function hashPw(pw, salt) { return crypto.createHash('sha256').update(salt + '\u0000' + pw).digest('hex'); }
+// Returns null if ok, or an error string. Claims the name if unprotected and a pw is offered.
+function checkPlayerPw(name, pw) {
+  name = ('' + (name || '')).trim();
+  pw = ('' + (pw || '')).trim();
+  if (!name) return null;
+  const r = ratings[name];
+  if (r && r.pwh) {
+    if (!pw) return 'that name is password-protected \u2014 enter your player password';
+    if (hashPw(pw, r.salt) !== r.pwh) return 'wrong player password for that name';
+    return null;
+  }
+  if (pw) {  // claim: first player to set a password owns the name
+    const entry = r || (ratings[name] = { elo: 1200, deals: 0 });
+    entry.salt = crypto.randomBytes(8).toString('hex');
+    entry.pwh = hashPw(pw, entry.salt);
+    saveRatings();
+  }
+  return null;
+}
 let ratingsSaveT = null;
 function saveRatings() {
   clearTimeout(ratingsSaveT);
@@ -41,19 +62,25 @@ function saveRatings() {
 function eloOf(name) { return ratings[name] ? ratings[name].elo : 1200; }
 function leaderboard() {
   return Object.keys(ratings)
-    .map((name) => ({ name, elo: Math.round(ratings[name].elo), deals: ratings[name].deals }))
+    .filter((name) => ratings[name].deals > 0)
+    .map((name) => ({ name, elo: Math.round(ratings[name].elo), deals: ratings[name].deals, locked: !!ratings[name].pwh }))
     .sort((a, b) => b.elo - a.elo)
     .slice(0, 10);
 }
-// Rate one finished deal. Score by chip delta sign; a player's "opponents" are the
-// seats whose delta has the opposite sign (handles partnerships, solos, Žebrák).
-// Bots play at a fixed 1200 and are never stored. K=24.
+// Rate one finished deal (per-hand: chip delta sign for THIS deal only, so a
+// player is never penalized for a table's prior chip history). A player's
+// "opponents" are the seats whose delta has the opposite sign (handles
+// partnerships, solos, Žebrák). Bots are rated by their difficulty — beating
+// Novice barely moves you; Insane sees every hand, so it prices like a master.
+// Human opponents weigh more than bots: K scales from 16 (all-bot) to 32 (all-human).
+const BOT_ELO = { novice: 1000, advanced: 1300, expert: 1450, insane: 1900 };
 function rateDeal(room, g) {
   const delta = g.result && g.result.delta;
   if (!delta) return;
+  const botElo = BOT_ELO[room.aiLevel] || 1000;
   const seatInfo = [0, 1, 2, 3].map((s) => {
     const human = !!(room.seats[s] || room.reserved[s]);
-    return { human, name: room.names[s], d: delta[s], elo: human ? eloOf(room.names[s]) : 1200 };
+    return { human, name: room.names[s], d: delta[s], elo: human ? eloOf(room.names[s]) : botElo };
   });
   if (!seatInfo.some((x) => x.human)) return;
   const changes = {};
@@ -64,7 +91,9 @@ function rateDeal(room, g) {
     const oppAvg = opps.reduce((t, x) => t + x.elo, 0) / opps.length;
     const expected = 1 / (1 + Math.pow(10, (oppAvg - me.elo) / 400));
     const score = me.d > 0 ? 1 : 0;
-    changes[me.name] = (changes[me.name] || 0) + 24 * (score - expected);
+    const humanShare = opps.filter((x) => x.human).length / opps.length;
+    const K = 16 + 16 * humanShare;   // PvP results move ratings twice as hard as bot farming
+    changes[me.name] = (changes[me.name] || 0) + K * (score - expected);
   }
   let touched = false;
   for (const name in changes) {
@@ -83,13 +112,14 @@ const GRACE_MS = 120000;        // how long a disconnected player's seat is held
 const AWAY_MOVE_DELAY = 10000;  // bot waits this long before moving for a briefly-disconnected player
 const rooms = new Map();        // roomId -> Room
 
-function makeRoom(id, aiLevel) {
+function makeRoom(id, aiLevel, password) {
   return {
     id,
     seats: [null, null, null, null], // ws or null (null => bot)
     names: ['North', 'East', 'South', 'West'],
     reserved: [null, null, null, null], // {token,name,timer} — seat held for a disconnected player
     aiLevel: ['advanced', 'expert', 'insane'].includes(aiLevel) ? aiLevel : 'novice',
+    password: ('' + (password || '')).trim().slice(0, 50) || null, // private table
     chat: [],                        // last 50 messages: {seat,name,text,ts}
     game: null,
     botTimer: null,
@@ -107,6 +137,7 @@ function cleanupRoom(room) {
 }
 
 function broadcast(room) {
+  room.lastActivity = Date.now();
   const g = room.game;
   // rate each deal exactly once, the moment it reaches scoring
   if (g && g.phase === 'scoring' && g._ratedDeal !== g.deal) { g._ratedDeal = g.deal; rateDeal(room, g); }
@@ -170,7 +201,7 @@ function tableList() {
   const out = [];
   for (const [id, room] of rooms) {
     const humans = room.seats.filter(Boolean).length + room.reserved.filter(Boolean).length;
-    if (humans > 0) out.push({ id, humans, ai: room.aiLevel });
+    if (humans > 0) out.push({ id, humans, ai: room.aiLevel, locked: !!room.password });
   }
   return out;
 }
@@ -190,6 +221,45 @@ setInterval(() => {
     try { ws.ping(); } catch (e) {}
   }
 }, 25000);
+
+// ---------- watchdog sweeper ----------
+// Every 60s: (1) reap seats held by sockets that died without a close event,
+// (2) close tables that have had no connected human for 5+ minutes,
+// (3) kick the bot pump on any live game that has sat idle too long (stalled timer).
+const VACANT_CLOSE_MS = 5 * 60 * 1000;
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, room] of [...rooms]) {
+    // 1. dead-socket seats: treat as a disconnect (seat -> bot, no reservation to honor here;
+    //    the normal close handler would have made one, so only truly zombie sockets hit this)
+    let reaped = false;
+    for (let s = 0; s < 4; s++) {
+      const w = room.seats[s];
+      if (w && w.readyState > 1) { room.seats[s] = null; reaped = true; }
+    }
+    const humans = room.seats.filter(Boolean).length;
+    const held = room.reserved.filter(Boolean).length;
+    if (humans === 0) {
+      // 2. vacant too long (counting held seats as "maybe coming back" only within their grace)
+      if (held === 0 || now - (room.lastHuman || room.lastActivity || 0) > VACANT_CLOSE_MS) {
+        for (const r of room.reserved) if (r) clearTimeout(r.timer);
+        clearTimeout(room.botTimer);
+        rooms.delete(id);
+        broadcastTables();
+        continue;
+      }
+    } else {
+      room.lastHuman = now;
+    }
+    // 3. stalled game: humans present, hand in progress, but nothing has moved for 90s
+    const g = room.game;
+    if (g && g.phase !== 'idle' && g.phase !== 'scoring' && now - (room.lastActivity || 0) > 90000) {
+      pumpBots(room);
+      room.lastActivity = now; // don't re-kick every sweep
+    }
+    if (reaped) { broadcast(room); pumpBots(room); broadcastTables(); }
+  }
+}, 60000);
 
 wss.on('connection', (ws) => {
   ws.meta = { roomId: null, seat: null, token: null };
@@ -234,9 +304,9 @@ function handle(ws, msg) {
       // { type:'join', roomId, name, seat? }
       const roomId = msg.roomId || 'lobby';
       let room = rooms.get(roomId);
-      if (!room) { room = makeRoom(roomId, msg.ai); rooms.set(roomId, room); } // creator picks the AI level
+      if (!room) { room = makeRoom(roomId, msg.ai, msg.password); rooms.set(roomId, room); } // creator picks AI level + optional password
       let seat = -1;
-      // Resume: a reconnect token matching a held seat puts the player right back.
+      // Resume: a reconnect token matching a held seat puts the player right back (no password needed).
       if (msg.token) {
         for (let i = 0; i < 4; i++) {
           const r = room.reserved[i];
@@ -244,6 +314,14 @@ function handle(ws, msg) {
             seat = i; clearTimeout(r.timer); room.reserved[i] = null; break;
           }
         }
+      }
+      // Claimed-name protection: a passworded player name can only be used with its password.
+      const pwErr = checkPlayerPw(msg.name, msg.playerPw);
+      if (pwErr) { send(ws, { type: 'error', error: pwErr }); return; }
+      // Private table: everyone except token-resumers must present the password.
+      if (seat < 0 && room.password && ('' + (msg.password || '')).trim() !== room.password) {
+        send(ws, { type: 'error', error: 'wrong password' });
+        return;
       }
       // Name fallback: if their name matches a seat not occupied by a human (a bot
       // currently covering it), give them that seat back — covers expired tokens,
@@ -307,6 +385,19 @@ function handle(ws, msg) {
       send(ws, { type: 'left' });
       send(ws, { type: 'tables', tables: tableList(), leaderboard: leaderboard() });
       broadcastTables();
+      break;
+    }
+    case 'resetElo': {
+      // { type:'resetElo', name, playerPw } — only the owner of a protected name may reset
+      const name = ('' + (msg.name || '')).trim();
+      const r = ratings[name];
+      if (!r || !r.pwh) { send(ws, { type: 'error', error: 'only password-protected names can reset Elo' }); return; }
+      if (hashPw(('' + (msg.playerPw || '')).trim(), r.salt) !== r.pwh) { send(ws, { type: 'error', error: 'wrong player password' }); return; }
+      r.elo = 1200; r.deals = 0;
+      saveRatings();
+      send(ws, { type: 'info', message: 'Elo reset to 1200 for ' + name });
+      broadcastTables();
+      send(ws, { type: 'tables', tables: tableList(), leaderboard: leaderboard() });
       break;
     }
     case 'list': {
