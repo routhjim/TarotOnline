@@ -96,7 +96,7 @@
       rng: opts.rng || Math.random,
       forehand: opts.forehand != null ? opts.forehand : 0,
       deal: 0,
-      aiLevel: ['advanced', 'expert', 'insane'].includes(opts.aiLevel) ? opts.aiLevel : 'novice',
+      aiLevel: ['advanced', 'expert', 'insane', 'synthetic', 'hybrid'].includes(opts.aiLevel) ? opts.aiLevel : 'novice',
       phase: 'idle',
       log: [],
       result: null,          // set in scoring phase
@@ -370,13 +370,14 @@
     g.phase = 'declare';
   }
   function advanceDeclStage(g) {
-    if (g.declStage === 1) {
+    if (g.declStage === 1) { g.declStage = 2; g.declPending = SEATS.slice(); return; }   // pagát-ultimo window — everyone is asked so the holder isn't revealed
+    if (g.declStage === 2) {
       const elig = SEATS.filter((s) => teamOf(g, s) === 'def' || (g.pagatUltimo != null && teamOf(g, s) !== teamOf(g, g.pagatUltimo)));
-      if (elig.length) { g.declStage = 2; g.declPending = elig; return; }
-    }
-    if (g.declStage <= 2 && g.contra != null) {
-      const elig = SEATS.filter((s) => teamOf(g, s) === 'decl');
       if (elig.length) { g.declStage = 3; g.declPending = elig; return; }
+    }
+    if (g.declStage <= 3 && g.contra != null) {
+      const elig = SEATS.filter((s) => teamOf(g, s) === 'decl');
+      if (elig.length) { g.declStage = 4; g.declPending = elig; return; }
     }
     enterPlay(g);
   }
@@ -386,13 +387,14 @@
     const hand = g.hands[seat];
     const stage = g.declStage || 1;
     if (stage === 1) {
-      // collections
+      // collections — pagát ultimo has its own later window (after all bonuses, before contra)
       const eligible = evalBonuses(hand).map((b) => b.type);
       const bonuses = (a.bonuses || []).filter((t) => eligible.includes(t));
       for (const t of bonuses) g.bonuses.push({ seat, type: t, value: (t === 'pawnee' || t === 'trul') ? 2 : (t === 'rosanna' ? 4 : BONUS[t].val) });
-      // pagát ultimo (only if you hold Pagát I)
-      if (a.ultimo && hand.some((c) => isTrump(c) && c.strength === 1)) g.pagatUltimo = seat;
     } else if (stage === 2) {
+      // pagát ultimo (only if you hold Pagát I) — called with every bonus on the table
+      if (a.ultimo && hand.some((c) => isTrump(c) && c.strength === 1)) g.pagatUltimo = seat;
+    } else if (stage === 3) {
       // contra: a defender doubles the standard payout (not on zebrák) — with all declarations visible
       if (a.contra && teamOf(g, seat) === 'def' && g.contra == null) g.contra = seat;
       // contra-pagát: an opponent of the ultimo caller doubles the pagát stake
@@ -573,6 +575,39 @@
   const minBy = (a, f) => a.reduce((x, y) => (f(y) < f(x) ? y : x));
   const maxBy = (a, f) => a.reduce((x, y) => (f(y) > f(x) ? y : x));
 
+  // ---------- synthetic AI: Advanced's brain with a tunable weight vector ----------
+  // DEFAULT_W reproduces Advanced exactly. SYN_W starts as the EVOLVED weights
+  // (paired-seed self-play tournaments vs Advanced) powering aiLevel 'synthetic'.
+  const DEFAULT_W = {
+    pullMinLen: 4,        // boss-trump pull needs this many trumps
+    desperateTricks: 5,   // "late" = this many tricks left
+    desperateGap: 24,     // "close" = within this many card points
+    feedPtsW: 100,        // points-vs-strength weight when feeding the partner
+    cheapPtsW: 100,       // points-vs-strength weight when playing cheap
+    kingFirstRound: 1,    // risk kings on a suit's first round (0/1)
+    pagatShed: 1,         // shed the pagat onto the partner's winning trick (0/1)
+    soloHold: 60,         // pitch penalty for suits a solo opponent still follows
+    trumpSpendPen: 400,   // reluctance to spend a trump when a suit card wins
+    despTrickPts: 3,      // desperate: trick points that justify the surest winner
+    hammerLen: 1,         // keep leading trumps after own Taroky/Hrubá (0/1)
+    keepBoss: 1,          // never feed away a boss trump (0/1)
+    f3A: 10, f3B: 9, f3C: 8,   // for-three bid: raw trumps / trumps with 2 honours / with top2+king
+    contraA: 9, contraB: 8, contraC: 6, // contra: raw trumps / with 3 fives / with 2 voids+XX
+    reyTr: 10,            // rey answer: trump count
+    pagatContraTr: 7,     // contra a pagat-ultimo call: trump count
+    paneTr: 5,            // pané bid: minimum trumps alongside the Pání
+  };
+  let SYN_W = Object.assign({}, DEFAULT_W, {
+    // EVOLVED weights — 18 generations of paired-seed self-play vs Advanced
+    // (960-deal evals), validated at +18.2 chips/100 deals on 3,200 unseen deals.
+    pullMinLen: 8, feedPtsW: 51, cheapPtsW: 81, pagatShed: 0, soloHold: 26,
+    despTrickPts: 2, desperateTricks: 2, desperateGap: 28, trumpSpendPen: 1224,
+    kingFirstRound: 0, f3A: 12, f3B: 8, f3C: 7, contraA: 8, contraB: 7, contraC: 9,
+    reyTr: 11, pagatContraTr: 7,
+  });
+  function setSyntheticWeights(w) { SYN_W = Object.assign({}, DEFAULT_W, w || {}); }
+  function wOf(g) { return (g.aiLevel === 'synthetic' || g.aiLevel === 'hybrid') ? SYN_W : DEFAULT_W; }
+
   function aiAction(g, seat) {
     switch (g.phase) {
       case 'bidding':
@@ -615,9 +650,10 @@
         const stage = g.declStage || 1;
         if (stage === 1) {
           const bonuses = evalBonuses(hand).map((b) => b.type);         // bots declare everything they hold
-          return { type: 'declare', bonuses, ultimo: false };
+          return { type: 'declare', bonuses };
         }
-        if (stage === 2) {
+        if (stage === 2) return { type: 'declare', ultimo: false };     // bots never stake the ultimo
+        if (stage === 3) {
           // informed contra: all stage-1 calls are now public
           const declSideLen = g.bonuses.some((b) => teamOf(g, b.seat) === 'decl' && (b.type === 'taroky' || b.type === 'hrube'));
           const anyLen = g.bonuses.some((b) => b.type === 'taroky' || b.type === 'hrube');
@@ -632,21 +668,27 @@
             const heur = !declSideLen && ((tr >= 9 || (tr >= 8 && fp >= 3)) || (tr >= 6 && voids >= 2 && !anyLen && hand.some((c) => isTrump(c) && c.strength >= 20)));
             contra = heur || (!declSideLen && solveDealValue(g, seat) <= 49);
           } else {
+            const W = wOf(g);
             contra = teamOf(g, seat) === 'def' && g.contra == null &&
-              (adv ? (!declSideLen && ((tr >= 9 || (tr >= 8 && fp >= 3)) || (tr >= 6 && voids >= 2 && !anyLen && hand.some((c) => isTrump(c) && c.strength >= 20))))
+              (adv ? (!declSideLen && ((tr >= W.contraA || (tr >= W.contraB && fp >= 3)) || (tr >= W.contraC && voids >= 2 && !anyLen && hand.some((c) => isTrump(c) && c.strength >= 20))))
                    : (tr >= 7 || fp >= 4));
           }
-          const pagatContra = g.pagatUltimo != null && teamOf(g, seat) !== teamOf(g, g.pagatUltimo) && (adv ? (tr >= 7 && hand.some((c) => isTrump(c) && c.strength >= 20)) : (tr >= 5));
+          const pagatContra = g.pagatUltimo != null && teamOf(g, seat) !== teamOf(g, g.pagatUltimo) && (adv ? (tr >= wOf(g).pagatContraTr && hand.some((c) => isTrump(c) && c.strength >= 20)) : (tr >= 5));
           return { type: 'declare', contra, pagatContra };
         }
         const rey = teamOf(g, seat) === 'decl' && g.contra != null && !g.rey &&
           ((g.aiLevel === 'expert' || g.aiLevel === 'insane') ? solveDealValue(g, seat) >= 61
-           : (adv ? (tr >= 10) : (tr >= 8)));
+           : (adv ? (tr >= wOf(g).reyTr) : (tr >= 8)));
         return { type: 'declare', rey };
       }
       case 'playing':
         if (g.turn !== seat) return null;
-        return { type: 'play', cardId: (g.aiLevel === 'insane' ? aiPlayInsane(g, seat) : g.aiLevel === 'expert' ? aiPlayExpert(g, seat) : g.aiLevel === 'advanced' ? aiPlayAdvanced(g, seat) : aiPlay(g, seat)).id };
+        return { type: 'play', cardId: (g.aiLevel === 'insane' ? aiPlayInsane(g, seat)
+          : g.aiLevel === 'expert' ? aiPlayExpert(g, seat)
+          // hybrid: evolved-synthetic play, pivoting to a determinized endgame solve at 4 cards —
+          // by then the void map + fallen-card memory constrain the worlds tightly, so 24 samples are cheap and sharp
+          : (g.aiLevel === 'hybrid' && g.hands[seat].length <= 4) ? aiPlayExpert(g, seat, 24, 30)
+          : (g.aiLevel === 'advanced' || g.aiLevel === 'synthetic' || g.aiLevel === 'hybrid') ? aiPlayAdvanced(g, seat) : aiPlay(g, seat)).id };
       default:
         return null;
     }
@@ -661,13 +703,14 @@
       const hi = hand.filter((c) => isTrump(c) && c.strength >= 18).length;   // XVIII+, Mond, Skýz
       const hasJ = hand.some((c) => c.court === 'J');
       const top2 = hand.some((c) => isTrump(c) && c.strength >= 21);           // Mond or Skýz
+      const W = wOf(g);
       // For-three is hugely +EV with a trump monster (measured ~95% win at 10 trumps),
       // and still strong at 8 trumps when backed by a top honour and a king
-      if ((tr >= 10 || (tr >= 9 && hi >= 2) || (tr >= 8 && top2 && hasK)) && lvl < 3) return 3;
+      if ((tr >= W.f3A || (tr >= W.f3B && hi >= 2) || (tr >= W.f3C && top2 && hasK)) && lvl < 3) return 3;
       // Pané: skip when forehand or holding the XIX — those hands usually win the ordinary
       // contract anyway, without the risk of the XX turning up in the talon and forcing a 1v3
       const paneRisky = seat === g.forehand || hand.some((c) => isTrump(c) && c.strength === 19);
-      if (fp >= 4 && tr >= 5 && lvl < 2 && !paneRisky) return 2;               // Páni + decent trumps -> Pané
+      if (fp >= 4 && tr >= W.paneTr && lvl < 2 && !paneRisky) return 2;       // Páni + decent trumps -> Pané
       if (tr === 0 && fp === 0 && !hasK && !hasQ && !hasJ && lvl < 1) return 1; // Žebrák only on a true bust
       return 0;
     }
@@ -712,11 +755,40 @@
     const voids = [{}, {}, {}, {}];                 // voids[seat][suit|'T'] = true once they failed to follow
     const fallen = new Set();                       // trump strengths already played
     const suitCount = { hearts: 0, diamonds: 0, spades: 0, clubs: 0 };
-    for (const e of (g.playLog || [])) {
-      if (e.key === 'T') fallen.add(e.str); else suitCount[e.key]++;
+    const followed = [{}, {}, {}, {}];              // followed[seat][suit] = times they followed that suit
+    const trumpsPlayed = [0, 0, 0, 0];
+    const maxBelief = [22, 22, 22, 22];             // upper bound on each seat's best remaining trump
+    const log = g.playLog || [];
+    let winSeat = -1, winKey = null, winStr = 0;
+    for (let i = 0; i < log.length; i++) {
+      const e = log[i];
+      if (i % 4 === 0) { winSeat = e.seat; winKey = e.key; winStr = e.str; }
+      else {
+        // played a trump UNDER the opposing winner on a trump trick: they almost
+        // certainly cannot beat it — cap our belief about their best trump
+        if (e.key === 'T' && winKey === 'T' && e.str < winStr && teamOf(g, e.seat) !== teamOf(g, winSeat))
+          maxBelief[e.seat] = Math.min(maxBelief[e.seat], winStr - 1);
+        const v = e.key === 'T' ? 1000 + e.str : (e.key === e.led ? e.str : 0);
+        const wv = winKey === 'T' ? 1000 + winStr : winStr;
+        if (v > wv) { winSeat = e.seat; winKey = e.key; winStr = e.str; }
+      }
+      if (e.key === 'T') { fallen.add(e.str); trumpsPlayed[e.seat]++; }
+      else { suitCount[e.key]++; if (e.key === e.led) followed[e.seat][e.key] = (followed[e.seat][e.key] || 0) + 1; }
       if (e.key !== e.led) voids[e.seat][e.led] = true;
     }
-    return { voids, fallen, suitCount };
+    // discard-based void priors: whoever discarded 3-4 cards (the forehand/declarer)
+    // almost certainly created ~2 voids; a 1-2 card discard, at least one
+    const discards = SEATS.map((s) => (g.discardPile && g.discardPile[s]) ? g.discardPile[s].length : 0);
+    const prior = SEATS.map((s) => (discards[s] >= 3 ? 2 : discards[s] >= 1 ? 1 : 0));
+    const SUITN = ['hearts', 'diamonds', 'spades', 'clubs'];
+    // "likely void": proven, or an unspent discard prior on a suit they have never followed once it's been led
+    const likelyVoid = (s, su) => {
+      if (voids[s][su]) return true;
+      const known = SUITN.filter((x) => voids[s][x]).length;
+      return prior[s] > known && !followed[s][su] && suitCount[su] >= 1;
+    };
+    const likelyRuff = (s, su) => likelyVoid(s, su) && !voids[s]['T'];
+    return { voids, fallen, suitCount, followed, maxBelief, discards, trumpsPlayed, likelyVoid, likelyRuff };
   }
   function topOutstanding(g, seat, mem) {           // highest trump not yet fallen and not in my own hand
     const mine = new Set(g.hands[seat].filter(isTrump).map((c) => c.strength));
@@ -725,6 +797,7 @@
   }
   function aiPlayAdvanced(g, seat) {
     if (g.mode === 'zebrak') return aiPlay(g, seat); // the beggar game keeps its dedicated logic
+    const W = wOf(g);
     const legal = legalMoves(g, seat); const str = strengthOf;
     const mem = aiMemory(g); const myTeam = teamOf(g, seat);
     const SUITNAMES = ['hearts', 'diamonds', 'spades', 'clubs'];
@@ -739,7 +812,7 @@
     // late and behind: worth gambling — flipping a narrow loss to a narrow win swings the whole game value
     // (defenders win the 53-53 tie, so a tied DECLARING team is losing)
     const behind = myTeam === 'decl' ? myPts <= oppPts : myPts < oppPts;
-    const desperate = tricksLeft <= 5 && behind && (oppPts - myPts) <= 24;
+    const desperate = tricksLeft <= W.desperateTricks && behind && (oppPts - myPts) <= W.desperateGap;
     const cruising = myPts >= (myTeam === 'def' ? 53 : 54); // mathematically won on points: take zero risks
     // did my side declare trump length (Taroky/Hrubá)? that's public info — and a mandate to pull trumps.
     // An OPPONENT'S declared length flips it: leading trumps into their wall only drains us and the partner.
@@ -748,15 +821,28 @@
     // can some opponent still hold a trump?
     const oppMayHoldTrump = SEATS.some((s) => s !== seat && !isMate(s) && !mem.voids[s]['T']) && outTop > 0;
     const goingUltimo = g.pagatUltimo === seat; // never shed the Pagát if we promised ultimo
+    // valat alarm: our side has taken NO tricks and the hand is running out — losing every
+    // trick costs a 20-chip valat, so buying even one worthless trick is hugely +EV
+    const valatRisk = (g.tricksWon && (g.tricksWon[myTeam] || 0) === 0) && tricksLeft <= 6;
+    // partner declared Bide (1-2 trumps): until those trumps are gone they must follow trump
+    // and cannot grease our trump tricks — against a long-trump opponent, wait them out
+    const mate = SEATS.find((s) => s !== seat && isMate(s));
+    const mateBite = mate != null && (g.bonuses || []).some((b) => b.seat === mate && b.type === 'bite');
+    const mateHasTrump = mate != null && !mem.voids[mate]['T'] && mem.trumpsPlayed[mate] < 2;
     if (g.trick.length === 0) {
       const myTr = legal.filter(isTrump); const nt = legal.filter((c) => !isTrump(c));
       const myTop = myTr.length ? Math.max.apply(null, myTr.map((c) => c.strength)) : 0;
-      // declaring side holding the boss trump with length: pull the defenders' trumps
-      // declaring side holding the boss trump with length: pull with the CHEAPEST trump that still beats everything outstanding
-      if (myTeam === 'decl' && !oppDeclaredLen && myTop > outTop && outTop > 0 && myTr.length >= 4) return minBy(myTr.filter((c) => c.strength > outTop), str);
+      // declaring side holding the boss trump with length: pull with the CHEAPEST trump that still beats everything outstanding.
+      // "Boss" counts belief too: if every opponent has shown trump-void or under-trumped below our top, our top is boss in practice.
+      const oppsAll = SEATS.filter((s) => s !== seat && !isMate(s));
+      const bossByBelief = myTop > 0 && oppsAll.every((s) => mem.voids[s]['T'] || mem.maxBelief[s] < myTop);
+      if (myTeam === 'decl' && !oppDeclaredLen && outTop > 0 && myTr.length >= W.pullMinLen && (myTop > outTop || bossByBelief)) {
+        const pullers = myTr.filter((c) => c.strength > outTop);
+        return pullers.length ? minBy(pullers, str) : maxBy(myTr, str);
+      }
       // we (or partner) declared Taroky/Hrubá: keep hammering trumps while opponents may hold any —
       // it clears the way home for our kings and short suits. Never lead the Pagát; boss first if we have it.
-      if (declaredLen && !oppDeclaredLen && oppMayHoldTrump && myTr.length) {
+      if (W.hammerLen && declaredLen && !oppDeclaredLen && oppMayHoldTrump && myTr.length) {
         const nonPagat = myTr.filter((c) => c.strength > 1);
         const lead = myTop > outTop ? minBy(myTr.filter((c) => c.strength > outTop), str)
                                     : (nonPagat.length ? maxBy(nonPagat, str) : null);
@@ -764,15 +850,34 @@
       }
       // behind late: cash the boss trump \u2014 a guaranteed trick, and the partner can feed it points
       if (desperate && myTop > outTop && outTop > 0) return minBy(myTr.filter((c) => c.strength > outTop), str);
-      // a partner shown void in a suit (and not out of trumps) can ruff: feed our fattest card there —
+      // valat alarm on lead: cash a boss trump NOW if we have one
+      if (valatRisk && myTop > outTop && myTr.length) return minBy(myTr.filter((c) => c.strength > outTop), str);
+      // a partner shown (or likely) void in a suit and not out of trumps can ruff: feed our fattest card there —
       // but only when the partner plays LAST and neither opponent has shown void in that suit (their ruff is then decisive)
       const ord = orderFrom(seat);
       if (isMate(ord[3]) && !mem.voids[ord[3]]['T'])
-        for (const su of SUITNAMES) if (mem.voids[ord[3]][su] && !mem.voids[ord[1]][su] && !mem.voids[ord[2]][su]) { const cs = nt.filter((c) => c.suit === su); if (cs.length) return maxBy(cs, (c) => c.points * 100 - str(c)); }
+        for (const su of SUITNAMES) if (mem.likelyVoid(ord[3], su) && !mem.voids[ord[1]][su] && !mem.voids[ord[2]][su]) { const cs = nt.filter((c) => c.suit === su); if (cs.length) return maxBy(cs, (c) => c.points * W.feedPtsW - str(c)); }
       // against a solo player: lead low, prefer suits they are VOID in only if our card is worthless (force a ruff, drain their trumps)
-      if (soloOpp != null) { const cheapest = nt.length ? minBy(nt, (c) => c.points * 100 + str(c)) : null; if (cheapest && cheapest.points <= 1 && mem.voids[soloOpp][cheapest.suit]) return cheapest; }
+      if (soloOpp != null) { const cheapest = nt.length ? minBy(nt, (c) => c.points * W.cheapPtsW + str(c)) : null; if (cheapest && cheapest.points <= 1 && mem.voids[soloOpp][cheapest.suit]) return cheapest; }
       const pool = nt.length ? nt : legal;
-      return minBy(pool, (c) => c.points * 100 + str(c));
+      // suit exhaustion: count how many of a suit's 8 cards remain outside my hand.
+      // A lead in a nearly-dead suit pulls trumps from the void hands — do that deliberately
+      // with worthless cards when we hold the big trumps, never with a pointy card.
+      const outstanding = (su) => 8 - mem.suitCount[su] - g.hands[seat].filter((c) => !isTrump(c) && c.suit === su).length;
+      const holdBig = myTop > outTop && myTr.length >= 2;
+      const mateLast = isMate(ord[3]);
+      return minBy(pool, (c) => {
+        let v = c.points * W.cheapPtsW + str(c);
+        if (!isTrump(c)) {
+          const out = outstanding(c.suit);
+          const oppRuffs = SEATS.some((s) => s !== seat && !isMate(s) && mem.likelyRuff(s, c.suit));
+          if (c.points >= 4 && (out <= 3 || oppRuffs)) v += 300;            // points into a likely ruff: bad
+          if (c.points >= 4 && !mateLast) v += 80;                          // an opponent acts last: they harvest
+          if (c.points >= 4 && mateLast) v -= 40;                           // partner acts last: points can come home
+          if (c.points <= 1 && out <= 3 && oppRuffs && holdBig) v -= 120;   // cheap drain lead while our trumps stay boss: good
+        }
+        return v;
+      });
     }
     const led = g.trick[0].card; const ledKey = isTrump(led) ? 'T' : led.suit;
     const cw = trickWinner(g.trick); const winCard = g.trick.find((x) => x.seat === cw).card;
@@ -780,16 +885,16 @@
     const after = orderFrom(g.leader).slice(g.trick.length + 1);
     const beats = legal.filter((c) => valueInTrick(c, led) > cv);
     const oppAfter = after.filter((s) => !isMate(s));
-    // can any remaining opponent still beat the current winner? (void-aware, count-aware)
+    // can any remaining opponent still beat the current winner? (void-aware, count-aware, belief-aware)
     const oppCanBeat = oppAfter.some((s) => {
       const vd = mem.voids[s];
-      if (isTrump(winCard)) return !vd['T'] && outTop > winCard.strength;
+      if (isTrump(winCard)) return !vd['T'] && outTop > winCard.strength && mem.maxBelief[s] > winCard.strength;
       return !vd[ledKey] || !vd['T'];
     });
     if (teamOf(g, cw) === myTeam) {
       // partner winning safely and we hold the Pagát among our legal cards: shed it home
       // (5 points banked AND no last-trick disaster) — unless we're committed to ultimo
-      if (!goingUltimo && (last || !oppCanBeat)) {
+      if (!goingUltimo && W.pagatShed && (last || !oppCanBeat)) {
         const pagat = legal.find((c) => isTrump(c) && c.strength === 1);
         if (pagat && valueInTrick(pagat, led) <= cv) return pagat;
       }
@@ -799,38 +904,71 @@
         let pool = safe.length ? safe : legal;
         // never spend a trump that is (or just became) BOSS — e.g. the XXI once the Skýz has fallen:
         // it is a guaranteed future trick; feed the next-fattest card instead
-        const keep = pool.filter((c) => !(isTrump(c) && c.strength > outTop));
+        const keep = W.keepBoss ? pool.filter((c) => !(isTrump(c) && c.strength > outTop)) : pool;
         if (keep.length) pool = keep;
-        return maxBy(pool, (c) => c.points * 100 - str(c));
+        return maxBy(pool, (c) => c.points * W.feedPtsW - str(c));
       }
-      // not last: play cheap, and never overtake the partner when no opponent can beat their card
-      // (my own hand counts: if I hold the Skýz, the partner's Mond is already boss)
+      // not last: play cheap — but if the partner is unbeatable, first get a threatened
+      // King/court card home now (grease): its suit may be ruffed out from under us later
       const under = legal.filter((c) => valueInTrick(c, led) <= cv);
-      if (!oppCanBeat && under.length) return minBy(under, (c) => c.points * 100 + str(c));
-      return minBy(legal, (c) => c.points * 100 + str(c));
+      if (!oppCanBeat && under.length) {
+        const opps = SEATS.filter((s) => s !== seat && !isMate(s));
+        const fat = maxBy(under, (c) => c.points * W.feedPtsW - str(c));
+        if (fat.points >= 4 && !isTrump(fat) && opps.some((s) => mem.voids[s][fat.suit] && !mem.voids[s]['T'])) return fat;
+        return minBy(under, (c) => c.points * W.cheapPtsW + str(c));
+      }
+      return minBy(legal, (c) => c.points * W.cheapPtsW + str(c));
     }
     // opponent winning — will a partner ruff behind us? (trick not yet trumped, partner plays last,
     // void in the led suit and still holding trumps: their ruff is then guaranteed to win)
-    const killer = !isTrump(winCard) && after.length && isMate(after[after.length - 1]) && mem.voids[after[after.length - 1]][ledKey] && !mem.voids[after[after.length - 1]]['T'];
-    if (killer && !beats.length) return maxBy(legal, (c) => c.points * 100 - str(c)); // feed the kill
+    const killer = !isTrump(winCard) && after.length && isMate(after[after.length - 1]) && mem.likelyVoid(after[after.length - 1], ledKey) && !mem.voids[after[after.length - 1]]['T'];
+    if (killer && !beats.length) return maxBy(legal, (c) => c.points * W.feedPtsW - str(c)); // feed the kill
+    // partner's ruff behind is PROVEN and we hold fat safe cards: grease the coming kill
+    // even though we could win ourselves — the points come home either way, and our winner is saved
+    if (killer && beats.length && mem.voids[after[after.length - 1]][ledKey]) {
+      const fat = maxBy(legal, (c) => c.points * W.feedPtsW - str(c));
+      if (fat.points >= 4 && valueInTrick(fat, led) <= cv) return fat;
+    }
     if (beats.length) {
+      const trickPts = g.trick.reduce((t, x) => t + x.card.points, 0);
+      // valat alarm: take this trick with the SUREST winner — any trick beats a 20-chip valat
+      if (valatRisk && (last || !oppCanBeat || tricksLeft <= 3)) return maxBy(beats, (c) => valueInTrick(c, led) * 1000 - c.points);
+      // partner still owes trumps after calling Bide: duck cheap trump tricks against a long-trump
+      // opponent — win them later, once the partner can throw us grease instead of following
+      if (mateBite && mateHasTrump && ledKey === 'T' && oppDeclaredLen && trickPts <= 4 && !desperate && !last) {
+        const duck = legal.filter((c) => valueInTrick(c, led) <= cv);
+        if (duck.length) return minBy(duck, (c) => c.points * W.cheapPtsW + str(c));
+      }
+      // ruff fight: we ruff a suit an opponent BEHIND us likely also ruffs — push a trump that
+      // tops their believed best (or force out their biggest), instead of ruffing cheap and losing the points
+      if (ledKey !== 'T' && beats.some(isTrump) && trickPts >= 2) {
+        const fighters = oppAfter.filter((s) => mem.likelyRuff(s, ledKey));
+        if (fighters.length) {
+          const oppMax = Math.max.apply(null, fighters.map((s) => mem.maxBelief[s]));
+          const over = beats.filter((c) => isTrump(c) && c.strength > oppMax);
+          if (over.length) return minBy(over, str);
+          return maxBy(beats.filter(isTrump), str);
+        }
+      }
+      // only mates behind: just take the lead — the cheapest winner is enough, never push high
+      if (!oppAfter.length) return minBy(beats, (c) => c.points * W.cheapPtsW + str(c) + (isTrump(c) ? W.trumpSpendPen : 0));
       // first time this suit is led: risk the King — it usually walks, and a king that hides at home
-      // often dies to a ruff later anyway. Skip only when an opponent behind is a near-certain ruff.
-      if (!isTrump(led) && mem.suitCount[ledKey] === 0 && !isTrump(winCard)) {
+      // often dies to a ruff later anyway. Skip when an opponent behind is a certain OR likely ruff
+      // (proven void, or a discarder who has never followed this suit).
+      if (W.kingFirstRound && !isTrump(led) && mem.suitCount[ledKey] === 0 && !isTrump(winCard)) {
         const king = beats.find((c) => !isTrump(c) && c.points === 5);
-        const certainRuff = oppAfter.some((s) => mem.voids[s][ledKey] && !mem.voids[s]['T']);
-        if (king && !certainRuff) return king;
+        const ruffRisk = oppAfter.some((s) => mem.likelyRuff(s, ledKey));
+        if (king && !ruffRisk) return king;
       }
       // behind late on a pointy trick: take it with our SUREST winner, not the cheapest
-      const trickPts = g.trick.reduce((t, x) => t + x.card.points, 0);
-      if (desperate && trickPts >= 3 && oppCanBeat && !last) return maxBy(beats, (c) => valueInTrick(c, led) * 1000 - c.points);
-      return minBy(beats, (c) => c.points * 100 + str(c) + (isTrump(c) ? 400 : 0));
+      if (desperate && trickPts >= W.despTrickPts && oppCanBeat && !last) return maxBy(beats, (c) => valueInTrick(c, led) * 1000 - c.points);
+      return minBy(beats, (c) => c.points * W.cheapPtsW + str(c) + (isTrump(c) ? W.trumpSpendPen : 0));
     }
     // can't win: pitch — but against a solo player HOLD the suits they still follow (win the endgame),
     // and throw from suits they would ruff anyway
     return minBy(legal, (c) => {
-      let v = c.points * 100 + str(c);
-      if (soloOpp != null && !isTrump(c) && !mem.voids[soloOpp][c.suit]) v += 60;
+      let v = c.points * W.cheapPtsW + str(c);
+      if (soloOpp != null && !isTrump(c) && !mem.voids[soloOpp][c.suit]) v += W.soloHold;
       return v;
     });
   }
@@ -964,7 +1102,8 @@
   // 'expert': no peeking — samples plausible worlds consistent with public info
   // (played cards, hand counts, shown voids, the called trump's whereabouts),
   // solves each, and plays the card that does best on average.
-  function aiPlayExpert(g, seat) {
+  function aiPlayExpert(g, seat, worlds, budget) {
+    worlds = worlds || 16; budget = budget || 40;
     const legal = legalMoves(g, seat);
     if (legal.length === 1) return legal[0];
     const mem = aiMemory(g);
@@ -974,7 +1113,7 @@
     const others = SEATS.filter((s) => s !== seat);
     const calledUnseen = g.calledId && !g.revealedPartner && pool.some((c) => c.id === g.calledId);
     const votes = new Map(); legal.forEach((c) => votes.set(c.id, 0));
-    for (let w = 0; w < 16; w++) {
+    for (let w = 0; w < worlds; w++) {
       // random deal of the unseen pool, then repair void violations by swapping
       let deal = null;
       for (let attempt = 0; attempt < 12 && !deal; attempt++) {
@@ -1010,7 +1149,7 @@
       // teams in this world: the partner is whoever holds the called card
       let g2 = g;
       if (calledUnseen) { g2 = Object.create(g); const p = SEATS.find((s) => hands[s].some((c) => c.id === g.calledId)); if (p !== undefined) g2.partner = p; }
-      const scored = ddRoot(g2, seat, hands, 40);
+      const scored = ddRoot(g2, seat, hands, budget);
       for (const s of scored) votes.set(s.card.id, votes.get(s.card.id) + s.val);
     }
     let best = legal[0];
@@ -1105,7 +1244,7 @@
   }
 
   return {
-    createGame, newDeal, applyAction, viewFor, aiAction,
+    createGame, newDeal, applyAction, viewFor, aiAction, setSyntheticWeights,
     // exposed for tests / advanced use:
     buildDeck, legalMoves, trickWinner, evalBonuses, teamOf, roman, SEATS,
   };

@@ -73,14 +73,18 @@ function leaderboard() {
 // partnerships, solos, Žebrák). Bots are rated by their difficulty — beating
 // Novice barely moves you; Insane sees every hand, so it prices like a master.
 // Human opponents weigh more than bots: K scales from 16 (all-bot) to 32 (all-human).
-const BOT_ELO = { novice: 1000, advanced: 1300, expert: 1450, insane: 1900 };
+// Bake-off-calibrated (chips/100-deal rates over ~1,500 randomized deals):
+// novice -84, advanced +5, synthetic +8 (but +18 head-to-head vs advanced),
+// hybrid +64 over the field — a ~200 Elo step over synthetic. Expert measured
+// ~even with synthetic head-to-head; Insane sees every hand, so it prices like a master.
+const BOT_ELO = { novice: 1000, advanced: 1300, synthetic: 1350, expert: 1400, hybrid: 1550, insane: 1900 };
 function rateDeal(room, g) {
   const delta = g.result && g.result.delta;
   if (!delta) return;
-  const botElo = BOT_ELO[room.aiLevel] || 1000;
+  const botElo = (s) => BOT_ELO[(room.aiLevels && room.aiLevels[s]) || room.aiLevel] || 1000;
   const seatInfo = [0, 1, 2, 3].map((s) => {
     const human = !!(room.seats[s] || room.reserved[s]);
-    return { human, name: room.names[s], d: delta[s], elo: human ? eloOf(room.names[s]) : botElo };
+    return { human, name: room.names[s], d: delta[s], elo: human ? eloOf(room.names[s]) : botElo(s) };
   });
   if (!seatInfo.some((x) => x.human)) return;
   const changes = {};
@@ -112,13 +116,18 @@ const GRACE_MS = 120000;        // how long a disconnected player's seat is held
 const AWAY_MOVE_DELAY = 10000;  // bot waits this long before moving for a briefly-disconnected player
 const rooms = new Map();        // roomId -> Room
 
-function makeRoom(id, aiLevel, password) {
+const AI_LEVELS = ['novice', 'advanced', 'synthetic', 'hybrid', 'expert', 'insane'];
+function makeRoom(id, aiLevel, password, ais) {
+  const base = AI_LEVELS.includes(aiLevel) ? aiLevel : 'novice';
+  // per-seat bot levels: creator may pass ais[0..3]; missing/invalid entries fall back to the base level
+  const aiLevels = [0, 1, 2, 3].map((s) => (ais && AI_LEVELS.includes(ais[s])) ? ais[s] : base);
   return {
     id,
     seats: [null, null, null, null], // ws or null (null => bot)
     names: ['North', 'East', 'South', 'West'],
     reserved: [null, null, null, null], // {token,name,timer} — seat held for a disconnected player
-    aiLevel: ['advanced', 'expert', 'insane'].includes(aiLevel) ? aiLevel : 'novice',
+    aiLevel: base,
+    aiLevels,
     password: ('' + (password || '')).trim().slice(0, 50) || null, // private table
     chat: [],                        // last 50 messages: {seat,name,text,ts}
     game: null,
@@ -160,6 +169,7 @@ function pumpBots(room) {
   for (let seat = 0; seat < 4; seat++) {
     const isBot = !room.seats[seat];
     if (!isBot) continue;
+    if (room.aiLevels) g.aiLevel = room.aiLevels[seat];   // per-seat bot brains
     const action = T.aiAction(g, seat);
     if (action) {
       // If this seat belongs to a disconnected player, give them time to come
@@ -201,7 +211,8 @@ function tableList() {
   const out = [];
   for (const [id, room] of rooms) {
     const humans = room.seats.filter(Boolean).length + room.reserved.filter(Boolean).length;
-    if (humans > 0) out.push({ id, humans, ai: room.aiLevel, locked: !!room.password });
+    const uniform = room.aiLevels ? room.aiLevels.every((x) => x === room.aiLevels[0]) : true;
+    if (humans > 0) out.push({ id, humans, ai: uniform ? room.aiLevel : 'mixed', locked: !!room.password });
   }
   return out;
 }
@@ -263,6 +274,7 @@ setInterval(() => {
 
 wss.on('connection', (ws) => {
   ws.meta = { roomId: null, seat: null, token: null };
+  ws.pwFails = 0;   // brute-force guard: too many wrong passwords -> drop the socket
   ws.isAlive = true;
   ws.on('pong', () => { ws.isAlive = true; });
   sockets.add(ws);
@@ -304,7 +316,7 @@ function handle(ws, msg) {
       // { type:'join', roomId, name, seat? }
       const roomId = msg.roomId || 'lobby';
       let room = rooms.get(roomId);
-      if (!room) { room = makeRoom(roomId, msg.ai, msg.password); rooms.set(roomId, room); } // creator picks AI level + optional password
+      if (!room) { room = makeRoom(roomId, msg.ai, msg.password, msg.ais); rooms.set(roomId, room); } // creator picks AI level(s) + optional password
       let seat = -1;
       // Resume: a reconnect token matching a held seat puts the player right back (no password needed).
       if (msg.token) {
@@ -317,7 +329,10 @@ function handle(ws, msg) {
       }
       // Claimed-name protection: a passworded player name can only be used with its password.
       const pwErr = checkPlayerPw(msg.name, msg.playerPw);
-      if (pwErr) { send(ws, { type: 'error', error: pwErr }); return; }
+      if (pwErr) {
+        if (++ws.pwFails >= 5) { try { ws.close(); } catch (e) {} return; }
+        send(ws, { type: 'error', error: pwErr }); return;
+      }
       // Private table: everyone except token-resumers must present the password.
       if (seat < 0 && room.password && ('' + (msg.password || '')).trim() !== room.password) {
         send(ws, { type: 'error', error: 'wrong password' });
@@ -392,12 +407,32 @@ function handle(ws, msg) {
       const name = ('' + (msg.name || '')).trim();
       const r = ratings[name];
       if (!r || !r.pwh) { send(ws, { type: 'error', error: 'only password-protected names can reset Elo' }); return; }
-      if (hashPw(('' + (msg.playerPw || '')).trim(), r.salt) !== r.pwh) { send(ws, { type: 'error', error: 'wrong player password' }); return; }
+      if (hashPw(('' + (msg.playerPw || '')).trim(), r.salt) !== r.pwh) {
+        if (++ws.pwFails >= 5) { try { ws.close(); } catch (e) {} return; }
+        send(ws, { type: 'error', error: 'wrong player password' }); return;
+      }
       r.elo = 1200; r.deals = 0;
       saveRatings();
       send(ws, { type: 'info', message: 'Elo reset to 1200 for ' + name });
       broadcastTables();
       send(ws, { type: 'tables', tables: tableList(), leaderboard: leaderboard() });
+      break;
+    }
+    case 'adminUnlock': {
+      // { type:'adminUnlock', name, adminKey } — forgot-password recovery, admin only.
+      // Set an ADMIN_KEY env var on the server (Railway: service -> Variables). Removes the
+      // password from a claimed name (Elo/deals kept) so its owner can re-claim with a new one.
+      const key = process.env.ADMIN_KEY;
+      if (!key || ('' + (msg.adminKey || '')) !== key) {
+        if (++ws.pwFails >= 5) { try { ws.close(); } catch (e) {} return; }
+        send(ws, { type: 'error', error: 'bad admin key' }); return;
+      }
+      const name = ('' + (msg.name || '')).trim();
+      const r = ratings[name];
+      if (!r || !r.pwh) { send(ws, { type: 'error', error: 'no protected entry for that name' }); return; }
+      delete r.pwh; delete r.salt;
+      saveRatings();
+      send(ws, { type: 'info', message: 'Password removed for ' + name + ' — they can re-claim with a new one.' });
       break;
     }
     case 'list': {

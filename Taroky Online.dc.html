@@ -53,6 +53,8 @@ button:active{transform:translateY(1px)}
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
   GOLD='#b8975a'; GOLDL='#d9bd7e'; INK='#2b2620';
+  AINAME={novice:'Rookie',advanced:'Accountant',synthetic:'Miser',hybrid:'Closer',expert:'Professor',insane:'Omniscient'};
+  AILEVELS=['novice','advanced','synthetic','hybrid','expert','insane'];
   SUIT={hearts:{g:'\u2665',c:'#a8362b'},diamonds:{g:'\u2666',c:'#a8362b'},spades:{g:'\u2660',c:'#26333c'},clubs:{g:'\u2663',c:'#26333c'}};
   bonusName={hrube:'Hrub\u00e1',tarocy:'Taroky',bite:'B\u00edda',uni:'Uni',pawnee:'P\u00e1n\u00ed',trul:'Trul',rosanna:'Rosanna'};
   bonusVal={hrube:4,tarocy:2,bite:2,uni:4,pawnee:2,trul:2,rosanna:4};
@@ -99,13 +101,17 @@ class Component extends DCLogic {
       else if(m.type==='reject')this.toast(m.error||'Move rejected');
       else if(m.type==='info')this.toast(m.message||'OK');
       else if(m.type==='error'){if(/full/i.test(m.error||'')&&!this.state.view)this._clearSession();this.toast(m.error||'Error');}};}
-  joinTable(roomId,pw){const id=(roomId||'').trim();if(!id){this.toast('Enter a table name');return;}this._retry=0;this._token=null;try{localStorage.setItem('taroky-playerpw',(this.state.playerPw||'').trim());}catch(e){}this.setState({room:id,chat:[],chatUnread:0,pwFor:null});this.send({type:'join',roomId:id,name:(this.state.name||'Player').trim(),ai:this.state.aiChoice,password:(pw||'').trim(),playerPw:(this.state.playerPw||'').trim()});}
+  joinTable(roomId,pw){const id=(roomId||'').trim();if(!id){this.toast('Enter a table name');return;}this._retry=0;this._token=null;try{localStorage.setItem('taroky-playerpw',(this.state.playerPw||'').trim());}catch(e){}this.setState({room:id,chat:[],chatUnread:0,pwFor:null});const az=this.state.aiSeats;this.send({type:'join',roomId:id,name:(this.state.name||'Player').trim(),ai:this.state.aiChoice,ais:az?[this.state.aiChoice,az[1],az[2],az[3]]:null,password:(pw||'').trim(),playerPw:(this.state.playerPw||'').trim()});}
   applyView(view){const prev=this.state.lastPhase;const reset=(view.phase!==prev);const patch={view:view,seat:view.you,lastPhase:view.phase};
     if(reset){patch.sel=[];patch.declSel={bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false};patch.showTricks=false;}
     if(this.state.hovered&&!(view.hand||[]).some(c=>c.id===this.state.hovered))patch.hovered=null;
     // A completed trick shows for ~1.6s then clears locally, even if the server
     // is still waiting on the winner (a human) to lead the next card.
     if(view.lastTrick&&view.lastTrick.seq!==this._schedSeq){this._schedSeq=view.lastTrick.seq;clearTimeout(this._heldTimer);const seq=view.lastTrick.seq;this._heldTimer=setTimeout(()=>{if(!this._dead)this.setState({heldHidden:seq});},1600);}
+    // pag\u00e1t-ultimo window: auto-pass when we don't hold the I (the stage asks everyone so the holder stays hidden)
+    const st=view.declStage||1;
+    if(st!==2)this._ultSent=false;
+    else if(view.phase==='declare'&&(view.declPending||[]).includes(view.you)&&!(view.hand||[]).some(c=>c.kind==='trump'&&c.strength===1)&&!this._ultSent){this._ultSent=true;this.sendAction({type:'declare',ultimo:false});}
     this.setState(patch);}
   sendAction(a){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify({type:'action',action:a}));}
   send(o){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(o));}
@@ -250,7 +256,7 @@ class Component extends DCLogic {
         E('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px'}},
           E('div',{style:{textAlign:'left',minWidth:0}},
             E('div',{style:{color:'#f1e6c9',fontSize:17,fontFamily:"'Cormorant Garamond'",whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},(t.locked?'\ud83d\udd12 ':'')+t.id),
-            E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)'}},t.humans+' / 4 players'+(t.humans>=4?' \u00b7 full':(t.humans===1?' \u00b7 3 bots':''))+(t.ai?' \u00b7 '+t.ai+' AI':'')+(t.locked?' \u00b7 private':''))),
+            E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)'}},t.humans+' / 4 players'+(t.humans>=4?' \u00b7 full':(t.humans===1?' \u00b7 3 bots':''))+(t.ai?' \u00b7 '+(this.AINAME[t.ai]||t.ai)+' bots':'')+(t.locked?' \u00b7 private':''))),
           btn(t.humans>=4?'Full':'Join',()=>{if(t.locked){this.setState({pwFor:s.pwFor===t.id?null:t.id,joinPw:''});}else this.joinTable(t.id);},t.humans>=4)),
         (t.locked&&s.pwFor===t.id)?E('div',{style:{display:'flex',gap:8,padding:'0 12px 10px'}},
           E('input',{type:'password',value:s.joinPw||'',placeholder:'table password',autoFocus:true,onChange:e=>this.setState({joinPw:e.target.value}),onKeyDown:e=>{if(e.key==='Enter')this.joinTable(t.id,s.joinPw);},style:Object.assign({},inputStyle,{flex:1,padding:'8px 10px'})}),
@@ -267,12 +273,19 @@ class Component extends DCLogic {
           btn('Create',()=>this.joinTable(s.newTable,s.newPw),false)),
         E('div',{style:{display:'flex',gap:8,alignItems:'center',marginTop:10}},
           E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)'}},'Bot skill'),
-          ['novice','advanced','expert','insane'].map(lv=>E('div',{key:lv,onClick:()=>this.setState({aiChoice:lv}),style:{cursor:'pointer',padding:'6px 12px',borderRadius:9,fontSize:13,letterSpacing:.5,border:'1px solid '+(s.aiChoice===lv?this.GOLDL:'rgba(216,189,126,.3)'),background:s.aiChoice===lv?'rgba(184,151,90,.22)':'rgba(8,16,12,.5)',color:s.aiChoice===lv?'#f1e6c9':'rgba(236,223,189,.65)'}},lv.charAt(0).toUpperCase()+lv.slice(1)))),
+          this.AILEVELS.map(lv=>E('div',{key:lv,onClick:()=>this.setState({aiChoice:lv,aiSeats:null}),style:{cursor:'pointer',padding:'6px 12px',borderRadius:9,fontSize:13,letterSpacing:.5,border:'1px solid '+(s.aiChoice===lv?this.GOLDL:'rgba(216,189,126,.3)'),background:s.aiChoice===lv?'rgba(184,151,90,.22)':'rgba(8,16,12,.5)',color:s.aiChoice===lv?'#f1e6c9':'rgba(236,223,189,.65)'}},this.AINAME[lv]))),
         E('div',{style:{fontSize:11,color:'rgba(236,223,189,.45)',marginTop:5,textAlign:'left'}},
           s.aiChoice==='novice'?'plays by simple instinct'
-          :s.aiChoice==='advanced'?'counts trumps, reads voids, feeds partners'
-          :s.aiChoice==='expert'?'simulates the hidden hands and solves each \u2014 strongest fair opponent'
+          :s.aiChoice==='advanced'?'counts trumps, reads voids, plays it safe \u2014 rarely spends a big card without cause'
+          :s.aiChoice==='synthetic'?'bred by self-play evolution: hoards its trumps and squeezes every point home'
+          :s.aiChoice==='hybrid'?'plays like the Miser, then solves the last 4 tricks exactly from every card it has counted'
+          :s.aiChoice==='expert'?'ponders simulated hands before every card \u2014 strong but slow to act'
           :'sees every hand and plays perfectly \u2014 it cheats. You have been warned.'),
+        E('div',{style:{display:'flex',gap:8,alignItems:'center',marginTop:8}},
+          E('div',{onClick:()=>this.setState({aiSeats:s.aiSeats?null:{1:s.aiChoice,2:s.aiChoice,3:s.aiChoice}}),style:{cursor:'pointer',fontSize:11,letterSpacing:.5,color:'rgba(216,189,126,.75)',textDecoration:'underline'}},s.aiSeats?'Same bot at every seat':'Mix bots per seat\u2026'),
+          s.aiSeats?[['1','Left'],['2','Across'],['3','Right']].map(([k,label])=>E('label',{key:k,style:{display:'flex',alignItems:'center',gap:4,fontSize:11,color:'rgba(236,223,189,.6)'}},label,
+            E('select',{value:s.aiSeats[k],onChange:e=>{const a=Object.assign({},s.aiSeats);a[k]=e.target.value;this.setState({aiSeats:a});},style:{background:'rgba(8,16,12,.7)',color:'#f1e6c9',border:'1px solid rgba(216,189,126,.35)',borderRadius:6,padding:'3px 4px',fontSize:11}},
+              this.AILEVELS.map(lv=>E('option',{key:lv,value:lv},this.AINAME[lv]))))):null),
         (s.leaderboard&&s.leaderboard.length)?E('div',{style:{marginTop:18,borderTop:'1px solid rgba(216,189,126,.2)',paddingTop:12}},
           E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:8,textAlign:'left'}},'Leaderboard'),
           E('div',{style:{maxHeight:170,overflowY:'auto'}},s.leaderboard.map((p,i)=>E('div',{key:p.name,style:{display:'flex',alignItems:'center',gap:8,padding:'4px 2px',borderBottom:i<s.leaderboard.length-1?'1px solid rgba(216,189,126,.08)':'none'}},
@@ -322,8 +335,11 @@ class Component extends DCLogic {
       const tr=hand.filter(c=>c.kind==='trump').length;const fp=hand.filter(c=>c.points===5).length;const hasPagat=hand.some(c=>c.kind==='trump'&&c.strength===1);
       const elig=[];if(tr>=10)elig.push('hrube');else if(tr>=8)elig.push('tarocy');else if(tr>=1&&tr<=2)elig.push('bite');else if(tr===0)elig.push('uni');if(hand.filter(c=>c.court==='K').length===4)elig.push('rosanna');else if(fp>=4)elig.push('pawnee');if(hand.some(c=>c.kind==='trump'&&c.strength===1)&&hand.some(c=>c.kind==='trump'&&c.strength===21)&&hand.some(c=>c.kind==='trump'&&c.strength===22))elig.push('trul');
       elig.forEach(t=>{const on=d.bonuses.indexOf(t)>=0;items.push(this.chip(this.bonusName[t]+(compact?' +'+(3*this.bonusVal[t]):' \u00b7 +'+(3*this.bonusVal[t])),'',on?'\u2714':compact?'call':'tap to call',on,()=>this.toggleDecl('bonuses',t),t));});
-      if(hasPagat)items.push(this.chip('Pag\u00e1t ultimo',compact?'\u00b14':'win last trick w/ I',d.ultimo?'\u2714':compact?'':'tap to stake',d.ultimo,()=>this.toggleDecl('ultimo'),'ult'));
     }else if(stage===2){
+      title='Pag\u00e1t ultimo?';sub='Every bonus is on the table \u2014 stake the last trick with the I?';btn='Continue';
+      const hasPagat=hand.some(c=>c.kind==='trump'&&c.strength===1);
+      if(hasPagat)items.push(this.chip('Pag\u00e1t ultimo',compact?'\u00b14':'win last trick w/ I',d.ultimo?'\u2714':compact?'':'tap to stake',d.ultimo,()=>this.toggleDecl('ultimo'),'ult'));
+    }else if(stage===3){
       title='Contra?';sub='All calls are on the table \u2014 double if you dare.';btn='Continue';
       if(notDecl&&v.contraBy==null)items.push(this.chip('Contra',compact?'\u00d72':'double the payout',d.contra?'\u2714':compact?'':'tap',d.contra,()=>this.toggleDecl('contra'),'con'));
       if(v.pagatUltimo!=null&&v.pagatUltimo!==v.you)items.push(this.chip('Contra pag\u00e1t',compact?'\u00d72':'double their ultimo',d.pagatContra?'\u2714':compact?'':'tap',d.pagatContra,()=>this.toggleDecl('pagatContra'),'cp'));
@@ -336,7 +352,7 @@ class Component extends DCLogic {
     if(stage>1){
       const parts=(v.bonuses||[]).map(b=>v.players[b.seat].name+' \u00b7 '+this.bonusName[b.type]);
       if(v.pagatUltimo!=null)parts.push(v.players[v.pagatUltimo].name+' \u00b7 Pag\u00e1t ultimo');
-      if(stage===3)parts.push(v.contraBy!=null?(v.players[v.contraBy].name+' \u00b7 Contra'):'Contra');
+      if(stage===4)parts.push(v.contraBy!=null?(v.players[v.contraBy].name+' \u00b7 Contra'):'Contra');
       recap=E('div',{key:'recap',style:{fontSize:compact?12.5:13.5,color:'rgba(236,223,189,.75)',margin:compact?'2px 0 8px':'8px 0 2px',lineHeight:1.5}},parts.length?('Called: '+parts.join('  \u2022  ')):'Nothing was called.');
     }
     return {items,title,sub,btn,recap};}
