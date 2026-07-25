@@ -684,7 +684,8 @@
       case 'playing':
         if (g.turn !== seat) return null;
         return { type: 'play', cardId: (g.aiLevel === 'insane' ? aiPlayInsane(g, seat)
-          : g.aiLevel === 'expert' ? aiPlayExpert(g, seat)
+          // the solver can't read intent: answer a human partner's opening trump signal first
+          : g.aiLevel === 'expert' ? (signalPlay(g, seat, aiMemory(g), legalMoves(g, seat)) || aiPlayExpert(g, seat))
           // hybrid: evolved-synthetic play, pivoting to a determinized endgame solve at 4 cards —
           // by then the void map + fallen-card memory constrain the worlds tightly, so 24 samples are cheap and sharp
           : (g.aiLevel === 'hybrid' && g.hands[seat].length <= 4) ? aiPlayExpert(g, seat, 24, 30)
@@ -790,6 +791,49 @@
     const likelyRuff = (s, su) => likelyVoid(s, su) && !voids[s]['T'];
     return { voids, fallen, suitCount, followed, maxBelief, discards, trumpsPlayed, likelyVoid, likelyRuff };
   }
+  // ---------- reading a human partner's opening signal ----------
+  // A forehand who leads a SMALL trump on the first trick is asking "who is my partner?" while
+  // announcing trump length and good colors: they want the opponents' trumps pulled so their
+  // kings and long suits come home late. The partner's duty is to WIN that trick and hand the
+  // lead straight back with high trumps. Used by every level above novice.
+  function signalPlay(g, seat, mem, legal) {
+    if (g.mode !== 'draw4' || g.calledId == null || g.partner !== seat) return null;
+    // only HUMAN forehands are read this way — bots don't signal, and answering a bot's
+    // incidental small-trump lead just burns the called trump early (measured -8 chips/100)
+    if (!g.humans || !g.humans[g.declarer]) return null;
+    const log = g.playLog || [];
+    if (!log.length) return null;
+    const first = log[0];
+    if (first.seat !== g.declarer || first.key !== 'T' || first.str < 2 || first.str > 12) return null;
+    const str = strengthOf;
+    const myTr = legal.filter(isTrump);
+    if (!myTr.length) return null;
+    // did the forehand announce 8+ trumps (Taroky/Hrubá)? then the Skýz answers first, XIX next
+    const declLen = (g.bonuses || []).some((b) => b.seat === g.declarer && (b.type === 'taroky' || b.type === 'hrube'));
+    const skyz = myTr.find((c) => c.strength === 22);
+    const called = myTr.find((c) => c.id === g.calledId);
+    if (g.trick.length === 0) {
+      if (called) return called;                          // come straight back with the called trump
+      const myTop = Math.max.apply(null, myTr.map((c) => c.strength));
+      const opps = SEATS.filter((s) => s !== seat && teamOf(g, s) !== 'decl');
+      // opponents demonstrably cannot win a trump trick: keep hammering from the top
+      if (opps.every((s) => mem.voids[s]['T'] || mem.maxBelief[s] < myTop)) {
+        const np = myTr.filter((c) => c.strength > 1);   // never lead the Pagát
+        if (np.length) return maxBy(np, str);
+      }
+      return null;
+    }
+    if (log.length >= 4) return null;                    // only the signal trick itself is forced
+    const led = g.trick[0].card;
+    const cw = trickWinner(g.trick);
+    const cv = valueInTrick(g.trick.find((x) => x.seat === cw).card, led);
+    const wins = myTr.filter((c) => valueInTrick(c, led) > cv);
+    if (!wins.length) return null;
+    if (g.trick.length === 3) return minBy(wins, str);   // in the back: take it as cheaply as possible
+    if (skyz && declLen) return skyz;                    // answer the announced length with the Skýz
+    return called || minBy(wins, str);                   // first/second seat: play the called trump
+  }
+
   function topOutstanding(g, seat, mem) {           // highest trump not yet fallen and not in my own hand
     const mine = new Set(g.hands[seat].filter(isTrump).map((c) => c.strength));
     for (let v = 22; v >= 1; v--) if (!mem.fallen.has(v) && !mine.has(v)) return v;
@@ -829,6 +873,8 @@
     const mate = SEATS.find((s) => s !== seat && isMate(s));
     const mateBite = mate != null && (g.bonuses || []).some((b) => b.seat === mate && b.type === 'bite');
     const mateHasTrump = mate != null && !mem.voids[mate]['T'] && mem.trumpsPlayed[mate] < 2;
+    const sig = signalPlay(g, seat, mem, legal);
+    if (sig) return sig;
     if (g.trick.length === 0) {
       const myTr = legal.filter(isTrump); const nt = legal.filter((c) => !isTrump(c));
       const myTop = myTr.length ? Math.max.apply(null, myTr.map((c) => c.strength)) : 0;

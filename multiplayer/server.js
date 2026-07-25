@@ -162,6 +162,9 @@ function pumpBots(room) {
   clearTimeout(room.botTimer);
   const g = room.game;
   if (!g || g.phase === 'scoring' || g.phase === 'idle') return;
+  // tell the engine which seats are people: bots read a human forehand's opening
+  // small-trump lead as a partner signal, but ignore the same lead from a bot
+  g.humans = [0, 1, 2, 3].map((s) => !!(room.seats[s] || room.reserved[s]));
   // If a trick just completed, pause on it so players can see all four cards
   // before the next lead sweeps it away.
   let delay = BOT_DELAY;
