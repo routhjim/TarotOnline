@@ -72,9 +72,21 @@
     tarocy: { name: 'Taroky', test: (t) => t === 8 || t === 9, val: 2 },
     bite:   { name: 'Bída',  test: (t) => t === 1 || t === 2, val: 2 },
     uni:    { name: 'Uni',   test: (t) => t === 0,          val: 4 },
+    // "Marci Mode" extras — optional collections, enabled per table
+    queenos:  { name: 'Quatros Queenos',  val: 3, marci: true },
+    horsemen: { name: 'Herd of Horsemen', val: 2, marci: true },
+    cluks:    { name: 'Clump of Cluks',   val: 1, marci: true },
+    sixpack:  { name: 'Six Pack',         val: 2, marci: true },
     // pawnee (Pání) is honours-based, evaluated separately
   };
-  function evalBonuses(hand) {
+  // longest run of consecutive trumps in a hand (Skýz sits at 22, right above the Mond)
+  function longestTrumpRun(hand) {
+    const s = hand.filter(isTrump).map((c) => c.strength).sort((a, b) => a - b);
+    let best = 0, run = 0, prev = null;
+    for (const v of s) { run = (prev != null && v === prev + 1) ? run + 1 : 1; prev = v; if (run > best) best = run; }
+    return best;
+  }
+  function evalBonuses(hand, marci) {
     const t = hand.filter(isTrump).length;
     const fp = hand.filter((c) => c.points === 5).length;
     const out = [];
@@ -84,6 +96,13 @@
     else if (fp >= 4) out.push({ type: 'pawnee', value: 2 });
     // Trul: holds Pagát (I), Mond (XXI) and Skýz (22)
     if (hand.some((c) => isTrump(c) && c.strength === 1) && hand.some((c) => isTrump(c) && c.strength === 21) && hand.some((c) => isTrump(c) && c.strength === 22)) out.push({ type: 'trul', value: 2 });
+    if (marci) {
+      const courts = (r) => hand.filter((c) => c.court === r).length === 4;
+      if (courts('Q')) out.push({ type: 'queenos', value: 3 });    // all four Queens
+      if (courts('C')) out.push({ type: 'horsemen', value: 2 });   // all four Cavaliers/Knights
+      if (courts('J')) out.push({ type: 'cluks', value: 1 });      // all four Jacks
+      if (longestTrumpRun(hand) >= 6) out.push({ type: 'sixpack', value: 2 }); // 6+ consecutive trumps
+    }
     return out;
   }
 
@@ -97,6 +116,7 @@
       forehand: opts.forehand != null ? opts.forehand : 0,
       deal: 0,
       aiLevel: ['advanced', 'expert', 'insane', 'synthetic', 'hybrid'].includes(opts.aiLevel) ? opts.aiLevel : 'novice',
+      marci: !!opts.marci,        // Marci Mode: the extra optional collections are live at this table
       phase: 'idle',
       log: [],
       result: null,          // set in scoring phase
@@ -388,7 +408,7 @@
     const stage = g.declStage || 1;
     if (stage === 1) {
       // collections — pagát ultimo has its own later window (after all bonuses, before contra)
-      const eligible = evalBonuses(hand).map((b) => b.type);
+      const eligible = evalBonuses(hand, g.marci).map((b) => b.type);
       const bonuses = (a.bonuses || []).filter((t) => eligible.includes(t));
       for (const t of bonuses) g.bonuses.push({ seat, type: t, value: (t === 'pawnee' || t === 'trul') ? 2 : (t === 'rosanna' ? 4 : BONUS[t].val) });
     } else if (stage === 2) {
@@ -539,6 +559,7 @@
   function viewFor(g, seat) {
     const v = {
       you: seat, deal: g.deal, phase: g.phase, forehand: g.forehand, turn: g.turn,
+      marci: !!g.marci,
       mode: g.mode, declarer: g.declarer,
       // partner hidden until the called card is played (or scoring)
       partner: (g.revealedPartner || g.phase === 'scoring') ? g.partner : null,
@@ -649,7 +670,7 @@
         const adv = g.aiLevel !== 'novice';
         const stage = g.declStage || 1;
         if (stage === 1) {
-          const bonuses = evalBonuses(hand).map((b) => b.type);         // bots declare everything they hold
+          const bonuses = evalBonuses(hand, g.marci).map((b) => b.type);         // bots declare everything they hold
           return { type: 'declare', bonuses };
         }
         if (stage === 2) return { type: 'declare', ultimo: false };     // bots never stake the ultimo

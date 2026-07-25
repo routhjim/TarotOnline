@@ -117,7 +117,7 @@ const AWAY_MOVE_DELAY = 10000;  // bot waits this long before moving for a brief
 const rooms = new Map();        // roomId -> Room
 
 const AI_LEVELS = ['novice', 'advanced', 'synthetic', 'hybrid', 'expert', 'insane'];
-function makeRoom(id, aiLevel, password, ais) {
+function makeRoom(id, aiLevel, password, ais, marci) {
   const base = AI_LEVELS.includes(aiLevel) ? aiLevel : 'novice';
   // per-seat bot levels: creator may pass ais[0..3]; missing/invalid entries fall back to the base level
   const aiLevels = [0, 1, 2, 3].map((s) => (ais && AI_LEVELS.includes(ais[s])) ? ais[s] : base);
@@ -128,6 +128,7 @@ function makeRoom(id, aiLevel, password, ais) {
     reserved: [null, null, null, null], // {token,name,timer} — seat held for a disconnected player
     aiLevel: base,
     aiLevels,
+    marci: !!marci,                  // Marci Mode: extra optional collections
     password: ('' + (password || '')).trim().slice(0, 50) || null, // private table
     chat: [],                        // last 50 messages: {seat,name,text,ts}
     game: null,
@@ -215,7 +216,7 @@ function tableList() {
   for (const [id, room] of rooms) {
     const humans = room.seats.filter(Boolean).length + room.reserved.filter(Boolean).length;
     const uniform = room.aiLevels ? room.aiLevels.every((x) => x === room.aiLevels[0]) : true;
-    if (humans > 0) out.push({ id, humans, ai: uniform ? room.aiLevel : 'mixed', locked: !!room.password });
+    if (humans > 0) out.push({ id, humans, ai: uniform ? room.aiLevel : 'mixed', locked: !!room.password, marci: !!room.marci });
   }
   return out;
 }
@@ -319,7 +320,7 @@ function handle(ws, msg) {
       // { type:'join', roomId, name, seat? }
       const roomId = msg.roomId || 'lobby';
       let room = rooms.get(roomId);
-      if (!room) { room = makeRoom(roomId, msg.ai, msg.password, msg.ais); rooms.set(roomId, room); } // creator picks AI level(s) + optional password
+      if (!room) { room = makeRoom(roomId, msg.ai, msg.password, msg.ais, msg.marci); rooms.set(roomId, room); } // creator picks AI level(s), password, Marci Mode
       let seat = -1;
       // Resume: a reconnect token matching a held seat puts the player right back (no password needed).
       if (msg.token) {
@@ -366,7 +367,7 @@ function handle(ws, msg) {
       ws.meta = { roomId, seat, token };
       send(ws, { type: 'joined', roomId, seat, seats: room.names, token });
       if (room.chat.length) send(ws, { type: 'chatHistory', messages: room.chat });
-      if (!room.game) { room.game = T.createGame({ seats: room.names, aiLevel: room.aiLevel }); room.game.aiLabel = (room.aiLevels && !room.aiLevels.every((x) => x === room.aiLevels[0])) ? 'mixed' : room.aiLevel; }
+      if (!room.game) { room.game = T.createGame({ seats: room.names, aiLevel: room.aiLevel, marci: room.marci }); room.game.aiLabel = (room.aiLevels && !room.aiLevels.every((x) => x === room.aiLevels[0])) ? 'mixed' : room.aiLevel; }
       // reflect any updated name
       room.game.players[seat].name = room.names[seat];
       // Auto-deal the first hand as soon as someone joins an idle room

@@ -56,8 +56,9 @@ class Component extends DCLogic {
   AINAME={novice:'Rookie',advanced:'Accountant',synthetic:'Miser',hybrid:'Closer',expert:'Professor',insane:'Omniscient',mixed:'Mixed'};
   AILEVELS=['novice','advanced','synthetic','hybrid','expert','insane'];
   SUIT={hearts:{g:'\u2665',c:'#a8362b'},diamonds:{g:'\u2666',c:'#a8362b'},spades:{g:'\u2660',c:'#26333c'},clubs:{g:'\u2663',c:'#26333c'}};
-  bonusName={hrube:'Hrub\u00e1',tarocy:'Taroky',bite:'B\u00edda',uni:'Uni',pawnee:'P\u00e1n\u00ed',trul:'Trul',rosanna:'Rosanna'};
-  bonusVal={hrube:4,tarocy:2,bite:2,uni:4,pawnee:2,trul:2,rosanna:4};
+  bonusName={hrube:'Hrub\u00e1',tarocy:'Taroky',bite:'B\u00edda',uni:'Uni',pawnee:'P\u00e1n\u00ed',trul:'Trul',rosanna:'Rosanna',
+    queenos:'Quatros Queenos',horsemen:'Herd of Horsemen',cluks:'Clump of Cluks',sixpack:'Six Pack'};
+  bonusVal={hrube:4,tarocy:2,bite:2,uni:4,pawnee:2,trul:2,rosanna:4,queenos:3,horsemen:2,cluks:1,sixpack:2};
   state={scale:1,mobile:false,cardStyle:'standard',heldHidden:null,connected:false,connecting:false,view:null,seat:null,seats:null,toast:'',tables:[],newTable:'',
     url:'wss://tarotonlinegame-production.up.railway.app',room:'',name:'Player',
     aiChoice:'advanced',leaderboard:[],showTricks:false,chat:[],chatOpen:false,chatInput:'',chatUnread:0,sel:[],declSel:{bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false},hovered:null,lastPhase:null};
@@ -101,7 +102,7 @@ class Component extends DCLogic {
       else if(m.type==='reject')this.toast(m.error||'Move rejected');
       else if(m.type==='info')this.toast(m.message||'OK');
       else if(m.type==='error'){if(/full/i.test(m.error||'')&&!this.state.view)this._clearSession();this.toast(m.error||'Error');}};}
-  joinTable(roomId,pw){const id=(roomId||'').trim();if(!id){this.toast('Enter a table name');return;}this._retry=0;this._token=null;try{localStorage.setItem('taroky-playerpw',(this.state.playerPw||'').trim());}catch(e){}this.setState({room:id,chat:[],chatUnread:0,pwFor:null});const az=this.state.aiSeats;this.send({type:'join',roomId:id,name:(this.state.name||'Player').trim(),ai:this.state.aiChoice,ais:az?[this.state.aiChoice,az[1],az[2],az[3]]:null,password:(pw||'').trim(),playerPw:(this.state.playerPw||'').trim()});}
+  joinTable(roomId,pw){const id=(roomId||'').trim();if(!id){this.toast('Enter a table name');return;}this._retry=0;this._token=null;try{localStorage.setItem('taroky-playerpw',(this.state.playerPw||'').trim());}catch(e){}this.setState({room:id,chat:[],chatUnread:0,pwFor:null});const az=this.state.aiSeats;this.send({type:'join',roomId:id,name:(this.state.name||'Player').trim(),ai:this.state.aiChoice,ais:az?[this.state.aiChoice,az[1],az[2],az[3]]:null,marci:!!this.state.marci,password:(pw||'').trim(),playerPw:(this.state.playerPw||'').trim()});}
   applyView(view){const prev=this.state.lastPhase;const reset=(view.phase!==prev);const patch={view:view,seat:view.you,lastPhase:view.phase};
     if(reset){patch.sel=[];patch.declSel={bonuses:[],ultimo:false,contra:false,rey:false,pagatContra:false};patch.showTricks=false;}
     if(this.state.hovered&&!(view.hand||[]).some(c=>c.id===this.state.hovered))patch.hovered=null;
@@ -256,7 +257,7 @@ class Component extends DCLogic {
         E('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px'}},
           E('div',{style:{textAlign:'left',minWidth:0}},
             E('div',{style:{color:'#f1e6c9',fontSize:17,fontFamily:"'Cormorant Garamond'",whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},(t.locked?'\ud83d\udd12 ':'')+t.id),
-            E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)'}},t.humans+' / 4 players'+(t.humans>=4?' \u00b7 full':(t.humans===1?' \u00b7 3 bots':''))+(t.ai?' \u00b7 '+(this.AINAME[t.ai]||t.ai)+' bots':'')+(t.locked?' \u00b7 private':''))),
+            E('div',{style:{fontSize:12,color:'rgba(216,189,126,.7)'}},t.humans+' / 4 players'+(t.humans>=4?' \u00b7 full':(t.humans===1?' \u00b7 3 bots':''))+(t.ai?' \u00b7 '+(this.AINAME[t.ai]||t.ai)+' bots':'')+(t.locked?' \u00b7 private':'')+(t.marci?' \u00b7 Marci':''))),
           btn(t.humans>=4?'Full':'Join',()=>{if(t.locked){this.setState({pwFor:s.pwFor===t.id?null:t.id,joinPw:''});}else this.joinTable(t.id);},t.humans>=4)),
         (t.locked&&s.pwFor===t.id)?E('div',{style:{display:'flex',gap:8,padding:'0 12px 10px'}},
           E('input',{type:'password',value:s.joinPw||'',placeholder:'table password',autoFocus:true,onChange:e=>this.setState({joinPw:e.target.value}),onKeyDown:e=>{if(e.key==='Enter')this.joinTable(t.id,s.joinPw);},style:Object.assign({},inputStyle,{flex:1,padding:'8px 10px'})}),
@@ -289,6 +290,10 @@ class Component extends DCLogic {
             E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:4}},label),
             E('select',{value:s.aiSeats[k],onChange:e=>{const a=Object.assign({},s.aiSeats);a[k]=e.target.value;this.setState({aiSeats:a});},style:{width:'100%',padding:'9px 10px',borderRadius:9,border:'1px solid rgba(216,189,126,.35)',background:'rgba(8,16,12,.6)',color:'#f1e6c9',fontSize:14.5,fontFamily:"'EB Garamond',serif",outline:'none',cursor:'pointer'}},
               this.AILEVELS.map(lv=>E('option',{key:lv,value:lv},this.AINAME[lv])))))):null,
+        E('div',{onClick:()=>this.setState({marci:!s.marci}),style:{display:'flex',alignItems:'center',gap:9,marginTop:14,padding:'9px 11px',borderRadius:9,cursor:'pointer',textAlign:'left',border:'1px solid '+(s.marci?this.GOLDL:'rgba(216,189,126,.28)'),background:s.marci?'rgba(184,151,90,.18)':'rgba(8,16,12,.45)'}},
+          E('div',{style:{width:16,height:16,flex:'0 0 auto',borderRadius:4,border:'1px solid '+(s.marci?this.GOLDL:'rgba(216,189,126,.45)'),background:s.marci?this.GOLDL:'transparent',color:'#1d2a20',fontSize:12,lineHeight:'15px',textAlign:'center'}},s.marci?'\u2714':''),
+          E('div',{},E('div',{style:{fontSize:13.5,letterSpacing:.5,color:s.marci?'#f1e6c9':'rgba(236,223,189,.72)'}},'Marci Mode'),
+            E('div',{style:{fontSize:11,color:'rgba(236,223,189,.45)',marginTop:2}},'extra collections: Quatros Queenos \u00b7 Herd of Horsemen \u00b7 Clump of Cluks \u00b7 Six Pack'))),
         (s.leaderboard&&s.leaderboard.length)?E('div',{style:{marginTop:18,borderTop:'1px solid rgba(216,189,126,.2)',paddingTop:12}},
           E('div',{style:{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'rgba(216,189,126,.7)',marginBottom:8,textAlign:'left'}},'Leaderboard'),
           E('div',{style:{maxHeight:170,overflowY:'auto'}},s.leaderboard.map((p,i)=>E('div',{key:p.name,style:{display:'flex',alignItems:'center',gap:8,padding:'4px 2px',borderBottom:i<s.leaderboard.length-1?'1px solid rgba(216,189,126,.08)':'none'}},
@@ -337,6 +342,8 @@ class Component extends DCLogic {
     if(stage===1){
       const tr=hand.filter(c=>c.kind==='trump').length;const fp=hand.filter(c=>c.points===5).length;const hasPagat=hand.some(c=>c.kind==='trump'&&c.strength===1);
       const elig=[];if(tr>=10)elig.push('hrube');else if(tr>=8)elig.push('tarocy');else if(tr>=1&&tr<=2)elig.push('bite');else if(tr===0)elig.push('uni');if(hand.filter(c=>c.court==='K').length===4)elig.push('rosanna');else if(fp>=4)elig.push('pawnee');if(hand.some(c=>c.kind==='trump'&&c.strength===1)&&hand.some(c=>c.kind==='trump'&&c.strength===21)&&hand.some(c=>c.kind==='trump'&&c.strength===22))elig.push('trul');
+      if(v.marci){const four=r=>hand.filter(c=>c.court===r).length===4;if(four('Q'))elig.push('queenos');if(four('C'))elig.push('horsemen');if(four('J'))elig.push('cluks');
+        const ss=hand.filter(c=>c.kind==='trump').map(c=>c.strength).sort((a,b)=>a-b);let run=0,best=0,prev=null;ss.forEach(x=>{run=(prev!=null&&x===prev+1)?run+1:1;prev=x;if(run>best)best=run;});if(best>=6)elig.push('sixpack');}
       elig.forEach(t=>{const on=d.bonuses.indexOf(t)>=0;items.push(this.chip(this.bonusName[t]+(compact?' +'+(3*this.bonusVal[t]):' \u00b7 +'+(3*this.bonusVal[t])),'',on?'\u2714':compact?'call':'tap to call',on,()=>this.toggleDecl('bonuses',t),t));});
     }else if(stage===2){
       title='Pag\u00e1t ultimo?';sub='Every bonus is on the table \u2014 stake the last trick with the I?';btn='Continue';
@@ -435,6 +442,7 @@ class Component extends DCLogic {
         p('In a normal deal the forehand calls the XIX (or the next trump they lack) before drawing \u2014 whoever holds it is their secret partner, revealed when it falls. Draw the called card yourself from the talon and you choose: play alone, or throw in and pay 2 to each.'),
         h('Discard & declarations'),
         p('After drawing, discard back to 12 (never Kings or the I / XXI / Sk\u00fdz \u2014 discards count toward your own pile, so banking points is smart). Then anyone may call, all optional: collections (Hrub\u00e1 10+ trumps, Taroky 8\u20139, Tru\u013e = I+XXI+Sk\u00fdz, P\u00e1n\u00ed 4+ honours, Bí\u0165a 1\u20132 trumps, Uni 0), Pag\u00e1t ultimo (\u00b14: win the last trick with the I), Contra (defenders double the payout), Rey (declarers re-double, \u00d74), and Contra pag\u00e1t.'),
+        p('Marci Mode tables add four more optional collections: Quatros Queenos (all four Queens, +3), Herd of Horsemen (all four Cavaliers, +2), Clump of Cluks (all four Jacks, +1) and Six Pack (six or more consecutive trumps, +2). Like every collection, each is paid by all three other players.'),
         h('Play'),
         p('Follow the led suit; if you cannot, you must trump; trumps beat suit cards. Play passes counter-clockwise. Card points: Kings & 5-pt trumps 5, Queens 4, Cavaliers 3, Jacks 2, others 1 per trick-pair (106 total).'),
         h('Scoring'),
