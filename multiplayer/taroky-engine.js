@@ -545,7 +545,7 @@
       // solo is a DISCOVERED fact, not an announcement: public only for inherently solo contracts
       // (žebrák, for-three), once the called card falls, at scoring — or to the solo player himself.
       solo: (g.mode === 'zebrak' || g.mode === 'forthree' || g.revealedPartner || g.phase === 'scoring' || seat === g.declarer) ? g.solo : false,
-      calledLabel: g.calledLabel, aiLevel: g.aiLevel || 'novice',
+      calledLabel: g.calledLabel, aiLevel: g.aiLabel || g.aiLevel || 'novice',
       contra: g.contra, rey: g.rey, reyBy: (g.reyBy != null ? g.reyBy : null), pagatContra: g.pagatContra, pagatUltimo: g.pagatUltimo,
       players: g.players.map((p) => ({ seat: p.seat, name: p.name, chips: p.chips, cards: g.hands ? g.hands[p.seat].length : 0 })),
       hand: g.hands ? g.hands[seat] : [],

@@ -363,7 +363,7 @@ function handle(ws, msg) {
       ws.meta = { roomId, seat, token };
       send(ws, { type: 'joined', roomId, seat, seats: room.names, token });
       if (room.chat.length) send(ws, { type: 'chatHistory', messages: room.chat });
-      if (!room.game) { room.game = T.createGame({ seats: room.names, aiLevel: room.aiLevel }); }
+      if (!room.game) { room.game = T.createGame({ seats: room.names, aiLevel: room.aiLevel }); room.game.aiLabel = (room.aiLevels && !room.aiLevels.every((x) => x === room.aiLevels[0])) ? 'mixed' : room.aiLevel; }
       // reflect any updated name
       room.game.players[seat].name = room.names[seat];
       // Auto-deal the first hand as soon as someone joins an idle room
