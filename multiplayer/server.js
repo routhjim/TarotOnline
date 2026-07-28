@@ -128,7 +128,7 @@ function makeRoom(id, aiLevel, password, ais, marci) {
     reserved: [null, null, null, null], // {token,name,timer} — seat held for a disconnected player
     aiLevel: base,
     aiLevels,
-    marci: !!marci,                  // Marci Mode: extra optional collections
+    marci: !!marci,                  // Marcie Mode: extra optional collections
     password: ('' + (password || '')).trim().slice(0, 50) || null, // private table
     chat: [],                        // last 50 messages: {seat,name,text,ts}
     game: null,
@@ -320,7 +320,7 @@ function handle(ws, msg) {
       // { type:'join', roomId, name, seat? }
       const roomId = msg.roomId || 'lobby';
       let room = rooms.get(roomId);
-      if (!room) { room = makeRoom(roomId, msg.ai, msg.password, msg.ais, msg.marci); rooms.set(roomId, room); } // creator picks AI level(s), password, Marci Mode
+      if (!room) { room = makeRoom(roomId, msg.ai, msg.password, msg.ais, msg.marci); rooms.set(roomId, room); } // creator picks AI level(s), password, Marcie Mode
       let seat = -1;
       // Resume: a reconnect token matching a held seat puts the player right back (no password needed).
       if (msg.token) {

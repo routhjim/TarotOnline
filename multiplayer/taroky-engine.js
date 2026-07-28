@@ -72,7 +72,7 @@
     tarocy: { name: 'Taroky', test: (t) => t === 8 || t === 9, val: 2 },
     bite:   { name: 'Bída',  test: (t) => t === 1 || t === 2, val: 2 },
     uni:    { name: 'Uni',   test: (t) => t === 0,          val: 4 },
-    // "Marci Mode" extras — optional collections, enabled per table
+    // "Marcie Mode" extras — optional collections, enabled per table
     queenos:  { name: 'Quatros Queenos',  val: 3, marci: true },
     horsemen: { name: 'Herd of Horsemen', val: 2, marci: true },
     cluks:    { name: 'Clump of Cluks',   val: 1, marci: true },
@@ -116,7 +116,7 @@
       forehand: opts.forehand != null ? opts.forehand : 0,
       deal: 0,
       aiLevel: ['advanced', 'expert', 'insane', 'synthetic', 'hybrid'].includes(opts.aiLevel) ? opts.aiLevel : 'novice',
-      marci: !!opts.marci,        // Marci Mode: the extra optional collections are live at this table
+      marci: !!opts.marci,        // Marcie Mode: the extra optional collections are live at this table
       phase: 'idle',
       log: [],
       result: null,          // set in scoring phase
